@@ -16,10 +16,14 @@ class Transaction extends HiveObject {
   @HiveField(3)
   DateTime date;
 
+  @HiveField(4)
+  String category;
+
   Transaction({
     required this.type,
     required this.montant,
     required this.description,
     required this.date,
+    this.category = 'Autres',
   });
 }

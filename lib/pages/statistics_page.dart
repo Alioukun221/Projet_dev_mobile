@@ -1,219 +1,290 @@
-// ignore_for_file: use_key_in_widget_constructors
+// ignore_for_file: use_key_in_widget_constructors, deprecated_member_use
 
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/transaction.dart';
-import 'package:intl/intl.dart'; // Pour formater les dates
+// Pour formater les dates
+import 'package:spendwise/theme/app_theme.dart';
 
 class StatisticsPage extends StatefulWidget {
+  const StatisticsPage({super.key});
+
   @override
   State<StatisticsPage> createState() => _StatisticsPageState();
 }
 
 class _StatisticsPageState extends State<StatisticsPage> {
-  final Box<Transaction> _transactionBox =
-      Hive.box<Transaction>('transactions');
+  String _selectedPeriod = 'Mois';
+  final List<String> _periods = ['Jour', 'Semaine', 'Mois', 'Année'];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: ValueListenableBuilder(
-        valueListenable: _transactionBox.listenable(),
-        builder: (context, Box<Transaction> box, _) {
-          // Recalcul des totaux à chaque changement
-          double totalDepot = 0;
-          double totalRetrait = 0;
-          Map<String, double> monthlyTotals = {};
-
-          for (var tx in box.values) {
-            String monthKey = DateFormat('yyyy-MM').format(tx.date);
-            monthlyTotals[monthKey] =
-                (monthlyTotals[monthKey] ?? 0) + tx.montant;
-
-            if (tx.type.toLowerCase() == 'dépôt') {
-              totalDepot += tx.montant;
-            } else if (tx.type.toLowerCase() == 'retrait') {
-              totalRetrait += tx.montant;
-            }
-          }
-
-          double soldeTotal = totalDepot - totalRetrait;
-
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ListView(
+    return ValueListenableBuilder(
+      valueListenable: Hive.box<Transaction>('transactions').listenable(),
+      builder: (context, Box<Transaction> box, _) {
+        if (box.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text("Les totaux",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    )),
-                const SizedBox(height: 10),
-                Column(
-                  children: [
-                    _buildSummaryCard('Total Dépôts', totalDepot),
-                    _buildSummaryCard('Total Retraits', totalRetrait),
-                    _buildSummaryCard('Solde Total', soldeTotal),
-                  ],
+                Icon(
+                  Icons.bar_chart_outlined,
+                  size: 64,
+                  color: AppTheme.textSecondaryColor,
                 ),
-                const SizedBox(height: 20),
-                Text("Graphiques",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    )),
-                _buildPieChart(totalDepot, totalRetrait),
-                const SizedBox(height: 20),
-                _buildBarChart(monthlyTotals),
+                const SizedBox(height: AppTheme.spacingM),
+                Text(
+                  'Aucune donnée',
+                  style: AppTheme.titleMedium.copyWith(
+                    color: AppTheme.textSecondaryColor,
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacingS),
+                Text(
+                  'Ajoutez des transactions pour voir les statistiques',
+                  style: AppTheme.bodyMedium.copyWith(
+                    color: AppTheme.textSecondaryColor,
+                  ),
+                ),
               ],
             ),
           );
-        },
-      ),
-    );
-  }
+        }
 
-  Widget _buildSummaryCard(String title, double value) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        margin: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('$title :',
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-            const SizedBox(width: 8),
-            Text(
-              '${value.toStringAsFixed(2)} FCFA',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: value >= 0 ? Colors.green : Colors.red,
+        final transactions = box.values.toList();
+        final now = DateTime.now();
+        DateTime startDate;
+
+        switch (_selectedPeriod) {
+          case 'Jour':
+            startDate = DateTime(now.year, now.month, now.day);
+            break;
+          case 'Semaine':
+            startDate = now.subtract(Duration(days: now.weekday - 1));
+            break;
+          case 'Mois':
+            startDate = DateTime(now.year, now.month, 1);
+            break;
+          case 'Année':
+            startDate = DateTime(now.year, 1, 1);
+            break;
+          default:
+            startDate = DateTime(now.year, now.month, 1);
+        }
+
+        final filteredTransactions = transactions
+            .where((tx) =>
+                tx.date.isAfter(startDate) ||
+                tx.date.isAtSameMomentAs(startDate))
+            .toList();
+
+        double totalIncome = 0;
+        double totalExpenses = 0;
+
+        for (var tx in filteredTransactions) {
+          if (tx.type == 'dépôt') {
+            totalIncome += tx.montant;
+          } else {
+            totalExpenses += tx.montant;
+          }
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(AppTheme.spacingM),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Période sélection
+              SegmentedButton<String>(
+                segments: _periods.map((period) {
+                  return ButtonSegment<String>(
+                    value: period,
+                    label: Text(period),
+                  );
+                }).toList(),
+                selected: {_selectedPeriod},
+                onSelectionChanged: (Set<String> newSelection) {
+                  setState(() {
+                    _selectedPeriod = newSelection.first;
+                  });
+                },
               ),
-            ),
-          ],
-        ),
-      ),
+              const SizedBox(height: AppTheme.spacingL),
+
+              // Résumé
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildSummaryCard(
+                      'Dépôts',
+                      totalIncome,
+                      AppTheme.successColor,
+                    ),
+                  ),
+                  const SizedBox(width: AppTheme.spacingM),
+                  Expanded(
+                    child: _buildSummaryCard(
+                      'Retraits',
+                      totalExpenses,
+                      AppTheme.errorColor,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppTheme.spacingL),
+
+              // Graphique en barres
+              Text(
+                'Évolution des transactions',
+                style: AppTheme.titleLarge,
+              ),
+              const SizedBox(height: AppTheme.spacingM),
+              SizedBox(
+                height: 200,
+                child: BarChart(
+                  BarChartData(
+                    alignment: BarChartAlignment.spaceAround,
+                    maxY: [totalIncome, totalExpenses]
+                            .reduce((a, b) => a > b ? a : b) *
+                        1.2,
+                    barTouchData: BarTouchData(enabled: false),
+                    titlesData: FlTitlesData(
+                      show: true,
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (value, meta) {
+                            return Text(
+                              value == 0 ? 'Dépôts' : 'Retraits',
+                              style: AppTheme.bodyMedium,
+                            );
+                          },
+                        ),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 40,
+                          getTitlesWidget: (value, meta) {
+                            return Text(
+                              '${value.toInt()}',
+                              style: AppTheme.bodyMedium,
+                            );
+                          },
+                        ),
+                      ),
+                      rightTitles: AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      topTitles: AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    gridData: FlGridData(show: false),
+                    barGroups: [
+                      BarChartGroupData(
+                        x: 0,
+                        barRods: [
+                          BarChartRodData(
+                            toY: totalIncome,
+                            color: AppTheme.successColor,
+                            width: 20,
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(AppTheme.borderRadiusS),
+                            ),
+                          ),
+                        ],
+                      ),
+                      BarChartGroupData(
+                        x: 1,
+                        barRods: [
+                          BarChartRodData(
+                            toY: totalExpenses,
+                            color: AppTheme.errorColor,
+                            width: 20,
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(AppTheme.borderRadiusS),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppTheme.spacingL),
+
+              // Graphique circulaire
+              Text(
+                'Répartition',
+                style: AppTheme.titleLarge,
+              ),
+              const SizedBox(height: AppTheme.spacingM),
+              SizedBox(
+                height: 200,
+                child: PieChart(
+                  PieChartData(
+                    sections: [
+                      PieChartSectionData(
+                        value: totalIncome,
+                        title: 'Dépôts',
+                        color: AppTheme.successColor,
+                        radius: 50,
+                        titleStyle: AppTheme.bodyMedium.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      PieChartSectionData(
+                        value: totalExpenses,
+                        title: 'Retraits',
+                        color: AppTheme.errorColor,
+                        radius: 50,
+                        titleStyle: AppTheme.bodyMedium.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildPieChart(double depot, double retrait) {
-    return SizedBox(
-      height: 200,
-      child: PieChart(
-        PieChartData(
-          sections: [
-            PieChartSectionData(
-              value: depot,
-              color: Colors.green,
-              title: 'Dépôt',
-              radius: 50,
-              titleStyle:
-                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            PieChartSectionData(
-              value: retrait,
-              color: Colors.red,
-              title: 'Retrait',
-              radius: 50,
-              titleStyle:
-                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
+  Widget _buildSummaryCard(String label, double amount, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.spacingM),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
+        boxShadow: AppTheme.shadowS,
       ),
-    );
-  }
-
-  Widget _buildBarChart(Map<String, double> monthlyTotals) {
-    final monthLabels = {
-      1: 'Jan',
-      2: 'Fév',
-      3: 'Mar',
-      4: 'Avr',
-      5: 'Mai',
-      6: 'Juin',
-      7: 'Juil',
-      8: 'Août',
-      9: 'Sep',
-      10: 'Oct',
-      11: 'Nov',
-      12: 'Déc',
-    };
-
-    List<BarChartGroupData> barGroups = monthlyTotals.entries.map((entry) {
-      final date = DateTime.parse('${entry.key}-01');
-      final month = date.month;
-
-      return BarChartGroupData(
-        x: month,
-        barRods: [
-          BarChartRodData(
-            toY: entry.value,
-            color: Colors.blueAccent,
-            width: 18,
-            borderRadius: BorderRadius.circular(6),
-            backDrawRodData: BackgroundBarChartRodData(
-              show: true,
-              toY: 0,
-              color: Colors.grey.shade200,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: AppTheme.bodyMedium.copyWith(
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: AppTheme.spacingS),
+          Text(
+            '${amount.toStringAsFixed(2)} CFA',
+            style: AppTheme.titleMedium.copyWith(
+              color: color,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ],
-        showingTooltipIndicators: [0],
-      );
-    }).toList();
-
-    double maxY = monthlyTotals.isEmpty
-        ? 100
-        : (monthlyTotals.values.reduce((a, b) => a > b ? a : b) * 1.2)
-            .ceilToDouble();
-
-    return AspectRatio(
-      aspectRatio: 1.7,
-      child: BarChart(
-        BarChartData(
-          barGroups: barGroups,
-          alignment: BarChartAlignment.spaceAround,
-          maxY: maxY,
-          gridData: FlGridData(show: true),
-          titlesData: FlTitlesData(
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                interval: maxY / 4,
-                getTitlesWidget: (value, _) => Text('${value.toInt()}'),
-              ),
-            ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (value, _) {
-                  final label = monthLabels[value.toInt()] ?? '';
-                  return Text(label, style: const TextStyle(fontSize: 12));
-                },
-              ),
-            ),
-          ),
-          borderData: FlBorderData(show: false),
-          barTouchData: BarTouchData(
-            enabled: true,
-            touchTooltipData: BarTouchTooltipData(
-              getTooltipColor: (touchedBarGroup) => Colors.black87,
-              getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                return BarTooltipItem(
-                  '${rod.toY.toStringAsFixed(0)} F',
-                  const TextStyle(color: Colors.white),
-                );
-              },
-            ),
-          ),
-        ),
       ),
     );
   }

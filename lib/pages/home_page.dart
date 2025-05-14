@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:spendwise/pages/add_transaction_page.dart';
 import 'package:spendwise/pages/dashboard_page.dart';
 import 'package:spendwise/pages/developer_page.dart';
+import 'package:spendwise/pages/planning_page.dart';
 import 'package:spendwise/pages/statistics_page.dart';
 import 'package:spendwise/pages/transactions_page.dart';
+import 'package:spendwise/theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,12 +21,14 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Widget> _pages = [
     TransactionsPage(), // index 0
     const DashboardPage(), // index 1 (Accueil)
-    StatisticsPage(), // index 2
+    const PlanningPage(), // index 2
+    StatisticsPage(), // index 3
   ];
 
   final List<String> _titles = const [
     'Transactions',
     'Accueil',
+    'Planification',
     'Statistiques',
   ];
 
@@ -34,15 +38,12 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text(
           _titles[_currentIndex],
-          style: const TextStyle(
-            fontSize: 25,
-            fontWeight: FontWeight.bold,
-          ),
+          style: AppTheme.titleLarge,
         ),
         centerTitle: true,
-        elevation: 1,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        elevation: 0,
+        backgroundColor: AppTheme.surfaceColor,
+        foregroundColor: AppTheme.textPrimaryColor,
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline),
@@ -66,6 +67,8 @@ class _HomeScreenState extends State<HomeScreen> {
             _currentIndex = index;
           });
         },
+        backgroundColor: AppTheme.surfaceColor,
+        elevation: 8,
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.list_alt_outlined),
@@ -76,6 +79,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
             label: 'Accueil',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.account_balance_wallet_outlined),
+            selectedIcon: Icon(Icons.account_balance_wallet),
+            label: 'Planification',
           ),
           NavigationDestination(
             icon: Icon(Icons.pie_chart_outline),
@@ -91,7 +99,8 @@ class _HomeScreenState extends State<HomeScreen> {
             MaterialPageRoute(builder: (_) => AddTransactionPage()),
           );
         },
-        child: const Icon(Icons.add),
+        backgroundColor: AppTheme.primaryColor,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

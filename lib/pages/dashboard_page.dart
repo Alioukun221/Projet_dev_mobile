@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:spendwise/models/transaction.dart';
+import 'package:spendwise/theme/app_theme.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -38,53 +39,56 @@ class _DashboardPageState extends State<DashboardPage> {
         }
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppTheme.spacingM),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Bonjour 👋',
-                style: Theme.of(context).textTheme.headlineSmall,
+                style: AppTheme.headlineMedium,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppTheme.spacingS),
               Text(
                 'Voici le résumé de vos finances',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: AppTheme.titleMedium,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppTheme.spacingM),
 
               // Résumé
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildSummaryCard(
-                      'Solde', total, const Color.fromARGB(255, 0, 140, 255)),
-                  _buildSummaryCard('Dépôts', income, Colors.green),
-                  _buildSummaryCard('Retraits', expenses, Colors.red),
+                  _buildSummaryCard('Solde', total, AppTheme.primaryColor),
+                  _buildSummaryCard('Dépôts', income, AppTheme.successColor),
+                  _buildSummaryCard('Retraits', expenses, AppTheme.errorColor),
                 ],
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: AppTheme.spacingL),
               // Dernières transactions
               Text(
                 'Dernières transactions',
-                style: Theme.of(context).textTheme.titleMedium,
+                style: AppTheme.titleLarge,
               ),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: AppTheme.spacingS),
               if (recentTransactions.isEmpty)
-                const Text('Aucune transaction pour le moment.')
+                Text(
+                  'Aucune transaction pour le moment.',
+                  style: AppTheme.bodyLarge,
+                )
               else
                 Column(
                   children: recentTransactions
                       .map((tx) => _buildTransactionTile(tx))
                       .toList(),
                 ),
-              // Juste après les "Dernières transactions"
-              SizedBox(height: 24),
-              Text("Vue graphique",
-                  style: Theme.of(context).textTheme.titleMedium),
-              SizedBox(height: 8),
+              const SizedBox(height: AppTheme.spacingL),
+              Text(
+                "Vue graphique",
+                style: AppTheme.titleLarge,
+              ),
+              const SizedBox(height: AppTheme.spacingS),
               _buildPieChart(income, expenses),
             ],
           ),
@@ -101,17 +105,23 @@ class _DashboardPageState extends State<DashboardPage> {
           sections: [
             PieChartSectionData(
               value: income,
-              color: Colors.green,
+              color: AppTheme.successColor,
               title: 'Dépôts',
               radius: 50,
-              titleStyle: TextStyle(fontWeight: FontWeight.bold),
+              titleStyle: AppTheme.bodyMedium.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             PieChartSectionData(
               value: expenses,
-              color: Colors.red,
+              color: AppTheme.errorColor,
               title: 'Retraits',
               radius: 50,
-              titleStyle: TextStyle(fontWeight: FontWeight.bold),
+              titleStyle: AppTheme.bodyMedium.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ],
         ),
@@ -121,47 +131,41 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildSummaryCard(String label, double amount, Color color) {
     return Expanded(
-      child: SizedBox(
+      child: Container(
         height: 110,
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: color.withOpacity(0.2),
+        margin: const EdgeInsets.symmetric(horizontal: AppTheme.spacingXS),
+        padding: const EdgeInsets.all(AppTheme.spacingM),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
+          boxShadow: AppTheme.shadowS,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: AppTheme.bodyMedium.copyWith(
+                color: color,
+                fontWeight: FontWeight.bold,
               ),
-            ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                    color: color, fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const SizedBox(height: AppTheme.spacingXS),
+            Text(
+              '${amount.toStringAsFixed(2)} ',
+              style: AppTheme.bodyLarge.copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
               ),
-              const SizedBox(height: 4),
-              Text(
-                '${amount.toStringAsFixed(2)} ',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: color,
-                  fontWeight: FontWeight.w600,
-                ),
+            ),
+            Text(
+              'CFA ',
+              style: AppTheme.bodyMedium.copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
               ),
-              Text(
-                'CFA ',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: color,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -170,41 +174,33 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildTransactionTile(Transaction tx) {
     final isDeposit = tx.type == 'dépôt';
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      padding: const EdgeInsets.all(8),
+      margin: const EdgeInsets.symmetric(vertical: AppTheme.spacingXS),
+      padding: const EdgeInsets.all(AppTheme.spacingM),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 5,
-            offset: Offset(0, 2),
-          )
-        ],
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
+        boxShadow: AppTheme.shadowS,
       ),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: isDeposit ? Colors.green : Colors.red,
+          backgroundColor: isDeposit ? AppTheme.successColor : AppTheme.errorColor,
           child: Icon(
             isDeposit ? Icons.arrow_downward : Icons.arrow_upward,
             color: Colors.white,
           ),
         ),
-        title: Text(tx.description,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            )),
+        title: Text(
+          tx.description,
+          style: AppTheme.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+        ),
         subtitle: Text(
           'Date: ${DateFormat('dd/MM/yyyy').format(tx.date)}',
-          style: TextStyle(fontSize: 14),
+          style: AppTheme.bodyMedium.copyWith(color: AppTheme.textSecondaryColor),
         ),
         trailing: Text(
-          '${isDeposit ? '+' : '-'}${tx.montant.toStringAsFixed(2)} FCFA',
-          style: TextStyle(
-            fontSize: 14,
-            color: isDeposit ? Colors.green : Colors.red,
+          '${isDeposit ? '+' : '-'}${tx.montant.toStringAsFixed(2)} CFA',
+          style: AppTheme.bodyMedium.copyWith(
+            color: isDeposit ? AppTheme.successColor : AppTheme.errorColor,
             fontWeight: FontWeight.bold,
           ),
         ),

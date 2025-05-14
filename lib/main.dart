@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:spendwise/pages/splash_screen.dart';
+import 'package:spendwise/theme/app_theme.dart';
 import 'models/transaction.dart'; // importe ton modèle
+import 'models/budget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
 
   Hive.registerAdapter(TransactionAdapter());
+  Hive.registerAdapter(BudgetAdapter());
+  
   await Hive.openBox<Transaction>('transactions');
-  runApp(FinanceApp());
+  await Hive.openBox<Budget>('budgets');
+  
+  runApp(const FinanceApp());
 }
 
 class FinanceApp extends StatelessWidget {
@@ -19,11 +25,7 @@ class FinanceApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'SpendWise',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color.fromARGB(255, 0, 94, 255)),
-      ),
+      theme: AppTheme.lightTheme,
       home: const SplashScreen(),
     );
   }
