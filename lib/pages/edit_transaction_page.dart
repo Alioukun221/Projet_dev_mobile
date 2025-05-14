@@ -3,8 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:spendwise/models/transaction.dart';
 import 'package:spendwise/models/budget.dart';
+import 'package:spendwise/services/data_service.dart';
 import 'package:spendwise/theme/app_theme.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 
 class EditTransactionPage extends StatefulWidget {
   final Transaction transaction;
@@ -54,35 +54,33 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
   }
 
   void _updateBudget(double oldAmount, double newAmount) {
-    final budgetBox = Hive.box<Budget>('budgets');
-    
     // Annuler l'ancienne dépense
     if (widget.transaction.type == 'retrait') {
-      final oldBudgets = budgetBox.values.where((budget) {
+      final budgets = DataService().getBudgets().where((budget) {
         return budget.category == widget.transaction.category &&
             widget.transaction.date.isAfter(budget.startDate) &&
             widget.transaction.date.isBefore(budget.endDate);
       }).toList();
 
-      if (oldBudgets.isNotEmpty) {
-        final oldBudget = oldBudgets.first;
-        oldBudget.spent -= oldAmount;
-        oldBudget.save();
+      if (budgets.isNotEmpty) {
+        final budget = budgets.first;
+        budget.spent -= oldAmount;
+        DataService().updateBudget(budget);
       }
     }
 
     // Appliquer la nouvelle dépense
     if (_selectedType == 'retrait') {
-      final newBudgets = budgetBox.values.where((budget) {
+      final budgets = DataService().getBudgets().where((budget) {
         return budget.category == _selectedCategory &&
             _selectedDate.isAfter(budget.startDate) &&
             _selectedDate.isBefore(budget.endDate);
       }).toList();
 
-      if (newBudgets.isNotEmpty) {
-        final newBudget = newBudgets.first;
-        newBudget.spent += newAmount;
-        newBudget.save();
+      if (budgets.isNotEmpty) {
+        final budget = budgets.first;
+        budget.spent += newAmount;
+        DataService().updateBudget(budget);
       }
     }
   }
@@ -97,7 +95,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
       widget.transaction.description = _descriptionController.text;
       widget.transaction.date = _selectedDate;
       widget.transaction.category = _selectedCategory;
-      widget.transaction.save();
+      DataService().updateTransaction(widget.transaction);
 
       _updateBudget(oldAmount, newAmount);
       Navigator.pop(context);
@@ -155,8 +153,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                       onPressed: () {
                         // Annuler la dépense dans le budget si nécessaire
                         if (widget.transaction.type == 'retrait') {
-                          final budgetBox = Hive.box<Budget>('budgets');
-                          final budgets = budgetBox.values.where((budget) {
+                          final budgets = DataService().getBudgets().where((budget) {
                             return budget.category == widget.transaction.category &&
                                 widget.transaction.date.isAfter(budget.startDate) &&
                                 widget.transaction.date.isBefore(budget.endDate);
@@ -165,18 +162,15 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                           if (budgets.isNotEmpty) {
                             final budget = budgets.first;
                             budget.spent -= widget.transaction.montant;
-                            budget.save();
+                            DataService().updateBudget(budget);
                           }
                         }
                         
-                        widget.transaction.delete();
+                        DataService().deleteTransaction(widget.transaction);
                         Navigator.pop(context); // Close dialog
                         Navigator.pop(context); // Return to previous screen
                       },
-                      child: Text(
-                        'Supprimer',
-                        style: TextStyle(color: AppTheme.errorColor),
-                      ),
+                      child: const Text('Supprimer'),
                     ),
                   ],
                 ),
@@ -192,30 +186,19 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-                                // Type de transaction
-                                SegmentedButton<String>(
-                                  segments: const [
-                                    ButtonSegment<String>(
+              // Type de transaction
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment<String>(
                     value: 'dépôt',
-                    label: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('Dépôt   '),
-                        Icon(Icons.arrow_downward, color: Colors.green),
-                      ],
-                    ),
+                    label: Text('Dépôt'),
+                    icon: Icon(Icons.arrow_downward),
                   ),
                   ButtonSegment<String>(
                     value: 'retrait',
-                    label: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('Retrait    '),
-                        Icon(Icons.arrow_upward, color: Colors.red),
-                      ],
-                    ),
+                    label: Text('Retrait'),
+                    icon: Icon(Icons.arrow_upward),
                   ),
-
                 ],
                 selected: {_selectedType},
                 onSelectionChanged: (Set<String> newSelection) {
@@ -291,23 +274,15 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                 title: const Text('Date'),
                 subtitle: Text(
                   '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                  style: AppTheme.bodyMedium,
                 ),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: () => _selectDate(context),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
-                  side: BorderSide(color: AppTheme.textSecondaryColor.withOpacity(0.2)),
-                ),
               ),
-              const SizedBox(height: AppTheme.spacingL),
+              const SizedBox(height: AppTheme.spacingM),
 
               // Bouton de mise à jour
               ElevatedButton(
                 onPressed: _updateTransaction,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingM),
-                ),
                 child: const Text('Mettre à jour'),
               ),
             ],

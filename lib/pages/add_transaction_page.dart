@@ -1,9 +1,10 @@
 // ignore_for_file: use_key_in_widget_constructors, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:spendwise/models/transaction.dart';
 import 'package:spendwise/models/budget.dart';
+import 'package:spendwise/models/category.dart';
+import 'package:spendwise/services/data_service.dart';
 import 'package:spendwise/theme/app_theme.dart';
 
 class AddTransactionPage extends StatefulWidget {
@@ -18,18 +19,21 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   final _descriptionController = TextEditingController();
   final _amountController = TextEditingController();
   String _selectedType = 'dépôt';
-  String _selectedCategory = 'Autres';
+  String? _selectedCategory;
   DateTime _selectedDate = DateTime.now();
 
-  final List<String> _categories = [
-    'Alimentation',
-    'Transport',
-    'Logement',
-    'Loisirs',
-    'Santé',
-    'Éducation',
-    'Autres'
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _initializeSelectedCategory();
+  }
+
+  void _initializeSelectedCategory() {
+    final categories = DataService().getCategories();
+    if (categories.isNotEmpty) {
+      _selectedCategory = categories.first.name;
+    }
+  }
 
   @override
   void dispose() {
@@ -39,8 +43,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   }
 
   void _updateBudget(double amount) {
-    final budgetBox = Hive.box<Budget>('budgets');
-    final budgets = budgetBox.values.where((budget) {
+    if (_selectedCategory == null) return;
+    
+    final budgets = DataService().getBudgets().where((budget) {
       return budget.category == _selectedCategory &&
           _selectedDate.isAfter(budget.startDate) &&
           _selectedDate.isBefore(budget.endDate);
@@ -49,56 +54,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     if (budgets.isNotEmpty) {
       final budget = budgets.first;
       budget.spent += amount;
-      budget.save();
-    }
-  }
-
-  void _saveTransaction() {
-    if (_formKey.currentState!.validate()) {
-      final amount = double.parse(_amountController.text);
-      final transaction = Transaction(
-        type: _selectedType,
-        montant: amount,
-        description: _descriptionController.text,
-        date: _selectedDate,
-        category: _selectedCategory,
-      );
-
-      Hive.box<Transaction>('transactions').add(transaction);
-      
-      // Mettre à jour le budget si c'est une dépense
-      if (_selectedType == 'retrait') {
-        _updateBudget(amount);
-      }
-      
-      Navigator.pop(context);
-    }
-  }
-
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppTheme.primaryColor,
-              onPrimary: Colors.white,
-              surface: AppTheme.surfaceColor,
-              onSurface: AppTheme.textPrimaryColor,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
+      DataService().updateBudget(budget);
     }
   }
 
@@ -140,25 +96,62 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               const SizedBox(height: AppTheme.spacingM),
 
               // Catégorie
-              DropdownButtonFormField<String>(
-                value: _selectedCategory,
-                items: _categories.map((category) {
-                  return DropdownMenuItem(
-                    value: category,
-                    child: Text(category),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _selectedCategory = value;
-                    });
+              StreamBuilder<List<String>>(
+                stream: Stream.fromFuture(Future.value(
+                  DataService().getCategories().map((c) => c.name).toList(),
+                )),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const CircularProgressIndicator();
                   }
+
+                  final categories = snapshot.data!;
+                  if (categories.isEmpty) {
+                    return Column(
+                      children: [
+                        const Text(
+                          'Aucune catégorie disponible',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                        const SizedBox(height: AppTheme.spacingM),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.pushNamed(context, '/categories');
+                          },
+                          child: const Text('Créer une catégorie'),
+                        ),
+                      ],
+                    );
+                  }
+
+                  // Réinitialiser la catégorie sélectionnée si elle n'existe plus
+                  if (_selectedCategory != null && !categories.contains(_selectedCategory)) {
+                    _selectedCategory = categories.first;
+                  } else if (_selectedCategory == null && categories.isNotEmpty) {
+                    _selectedCategory = categories.first;
+                  }
+                  
+                  return DropdownButtonFormField<String>(
+                    value: _selectedCategory,
+                    items: categories.map((category) {
+                      return DropdownMenuItem(
+                        value: category,
+                        child: Text(category),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          _selectedCategory = value;
+                        });
+                      }
+                    },
+                    decoration: const InputDecoration(
+                      labelText: 'Catégorie',
+                      border: OutlineInputBorder(),
+                    ),
+                  );
                 },
-                decoration: const InputDecoration(
-                  labelText: 'Catégorie',
-                  border: OutlineInputBorder(),
-                ),
               ),
               const SizedBox(height: AppTheme.spacingM),
 
@@ -204,23 +197,45 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 title: const Text('Date'),
                 subtitle: Text(
                   '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                  style: AppTheme.bodyMedium,
                 ),
                 trailing: const Icon(Icons.calendar_today),
-                onTap: () => _selectDate(context),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
-                  side: BorderSide(color: AppTheme.textSecondaryColor.withOpacity(0.2)),
-                ),
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: _selectedDate,
+                    firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (date != null) {
+                    setState(() {
+                      _selectedDate = date;
+                    });
+                  }
+                },
               ),
               const SizedBox(height: AppTheme.spacingL),
 
               // Bouton de sauvegarde
               ElevatedButton(
-                onPressed: _saveTransaction,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingM),
-                ),
+                onPressed: () {
+                  if (_formKey.currentState!.validate() && _selectedCategory != null) {
+                    final amount = double.parse(_amountController.text);
+                    if (_selectedType == 'retrait') {
+                      _updateBudget(amount);
+                    }
+
+                    final transaction = Transaction(
+                      type: _selectedType,
+                      category: _selectedCategory!,
+                      montant: amount,
+                      description: _descriptionController.text,
+                      date: _selectedDate,
+                    );
+
+                    DataService().addTransaction(transaction);
+                    Navigator.pop(context);
+                  }
+                },
                 child: const Text('Enregistrer'),
               ),
             ],

@@ -5,17 +5,16 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:spendwise/models/transaction.dart';
 import 'package:spendwise/pages/edit_transaction_page.dart';
+import 'package:spendwise/services/data_service.dart';
 import 'package:spendwise/theme/app_theme.dart';
 
 class TransactionsPage extends StatelessWidget {
-  TransactionsPage({super.key});
-
-  final Box<Transaction> _transactionBox = Hive.box<Transaction>('transactions');
+  const TransactionsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
-      valueListenable: _transactionBox.listenable(),
+      valueListenable: DataService().getTransactionsListenable(),
       builder: (context, Box<Transaction> box, _) {
         if (box.isEmpty) {
           return Center(
@@ -46,11 +45,15 @@ class TransactionsPage extends StatelessWidget {
           );
         }
 
-        List<Transaction> transactions = box.values.toList()
-          ..sort((a, b) => b.date.compareTo(a.date));
+        List<Transaction> transactions = DataService().getTransactions();
 
         return ListView.builder(
-          padding: const EdgeInsets.all(AppTheme.spacingM),
+          padding: const EdgeInsets.only(
+            left: AppTheme.spacingM,
+            right: AppTheme.spacingM,
+            top: AppTheme.spacingM,
+            bottom: 60,
+          ),
           itemCount: transactions.length,
           itemBuilder: (context, index) {
             final transaction = transactions[index];
@@ -81,31 +84,35 @@ class TransactionsPage extends StatelessWidget {
                     color: AppTheme.textSecondaryColor,
                   ),
                 ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
+                trailing: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
                       '${isDeposit ? '+' : '-'}${transaction.montant.toStringAsFixed(2)} CFA',
-                      style: AppTheme.bodyMedium.copyWith(
+                      style: AppTheme.bodyLarge.copyWith(
                         color: isDeposit ? AppTheme.successColor : AppTheme.errorColor,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => EditTransactionPage(
-                              transaction: transaction,
-                            ),
-                          ),
-                        );
-                      },
+                    Text(
+                      transaction.category,
+                      style: AppTheme.bodyMedium.copyWith(
+                        color: AppTheme.textSecondaryColor,
+                      ),
                     ),
                   ],
                 ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditTransactionPage(
+                        transaction: transaction,
+                      ),
+                    ),
+                  );
+                },
               ),
             );
           },

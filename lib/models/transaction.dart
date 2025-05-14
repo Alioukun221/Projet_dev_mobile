@@ -8,22 +8,22 @@ class Transaction extends HiveObject {
   String type; // 'dépôt' ou 'retrait'
 
   @HiveField(1)
-  double montant;
+  String category;
 
   @HiveField(2)
-  String description;
+  double montant;
 
   @HiveField(3)
-  DateTime date;
+  String description;
 
   @HiveField(4)
-  String category;
+  DateTime date;
 
   Transaction({
     required this.type,
+    required this.category,
     required this.montant,
     required this.description,
     required this.date,
-    this.category = 'Autres',
   });
 }

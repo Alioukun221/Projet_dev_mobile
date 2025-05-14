@@ -5,6 +5,7 @@ import 'package:spendwise/pages/developer_page.dart';
 import 'package:spendwise/pages/planning_page.dart';
 import 'package:spendwise/pages/statistics_page.dart';
 import 'package:spendwise/pages/transactions_page.dart';
+import 'package:spendwise/pages/categories_page.dart';
 import 'package:spendwise/theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,78 +17,211 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 1; // Accueil est maintenant au centre
+  int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-    TransactionsPage(), // index 0
-    const DashboardPage(), // index 1 (Accueil)
-    const PlanningPage(), // index 2
-    StatisticsPage(), // index 3
-  ];
-
-  final List<String> _titles = const [
-    'Transactions',
-    'Accueil',
-    'Planification',
-    'Statistiques',
+    const DashboardPage(),
+    TransactionsPage(),
+    PlanningPage(),
+    const StatisticsPage(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          _titles[_currentIndex],
-          style: AppTheme.titleLarge,
-        ),
-        centerTitle: true,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        backgroundColor: AppTheme.surfaceColor,
-        foregroundColor: AppTheme.textPrimaryColor,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: Container(
+              padding: const EdgeInsets.all(AppTheme.spacingS),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
+              ),
+              child: Icon(
+                Icons.menu,
+                color: AppTheme.primaryColor,
+              ),
+            ),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const DeveloperPage()),
-              );
+              Scaffold.of(context).openDrawer();
             },
           ),
-        ],
+        ),
+        title: Text(
+          'SpendWise',
+          style: AppTheme.titleLarge.copyWith(
+            color: AppTheme.primaryColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
+      drawer: Drawer(
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                AppTheme.primaryColor.withOpacity(0.1),
+                Colors.white,
+              ],
+            ),
+          ),
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              DrawerHeader(
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(AppTheme.spacingS),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
+                      ),
+                      child: const Icon(
+                        Icons.account_balance_wallet,
+                        color: Colors.white,
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(height: AppTheme.spacingM),
+                    Text(
+                      'SpendWise',
+                      style: AppTheme.headlineMedium.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: AppTheme.spacingXS),
+                    Text(
+                      'Gérez vos finances',
+                      style: AppTheme.bodyMedium.copyWith(
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+             
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(AppTheme.spacingS),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
+                  ),
+                  child: Icon(
+                    Icons.category,
+                    color: AppTheme.primaryColor,
+                  ),
+                ),
+                title: Text(
+                  'Catégories',
+                  style: AppTheme.bodyLarge.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CategoriesPage(),
+                    ),
+                  );
+                },
+              ),
+               ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(AppTheme.spacingS),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
+                  ),
+                  child: Icon(
+                    Icons.info,
+                    color: AppTheme.primaryColor,
+                  ),
+                ),
+                title: Text(
+                  'À propos',
+                  style: AppTheme.bodyLarge.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DeveloperPage(),
+                    ),
+                  );
+                },
+              ),
+              const Divider( color: Colors.grey),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(AppTheme.spacingS),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
+                  ),
+                  child: Icon(
+                    Icons.settings,
+                    color: AppTheme.primaryColor,
+                  ),
+                ),
+                title: Text(
+                  'Paramètres',
+                  style: AppTheme.bodyLarge.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/settings');
+                },
+              ),
+            ],
+          ),
+        ),
       ),
+      body: _pages[_selectedIndex],
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
+        selectedIndex: _selectedIndex,
         onDestinationSelected: (int index) {
           setState(() {
-            _currentIndex = index;
+            _selectedIndex = index;
           });
         },
-        backgroundColor: AppTheme.surfaceColor,
-        elevation: 8,
         destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard),
+            label: 'Accueil',
+          ),
           NavigationDestination(
             icon: Icon(Icons.list_alt_outlined),
             selectedIcon: Icon(Icons.list_alt),
             label: 'Transactions',
           ),
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Accueil',
+            icon: Icon(Icons.calendar_today_outlined),
+            selectedIcon: Icon(Icons.calendar_today),
+            label: 'Planning',
           ),
           NavigationDestination(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            selectedIcon: Icon(Icons.account_balance_wallet),
-            label: 'Planification',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.pie_chart_outline),
-            selectedIcon: Icon(Icons.pie_chart),
+            icon: Icon(Icons.bar_chart_outlined),
+            selectedIcon: Icon(Icons.bar_chart),
             label: 'Statistiques',
           ),
         ],

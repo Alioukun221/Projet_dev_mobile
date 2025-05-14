@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:spendwise/models/budget.dart';
+import 'package:spendwise/models/category.dart';
+import 'package:spendwise/services/data_service.dart';
 import 'package:spendwise/theme/app_theme.dart';
 import 'package:fl_chart/fl_chart.dart';
 
@@ -12,7 +14,7 @@ class PlanningPage extends StatefulWidget {
 }
 
 class _PlanningPageState extends State<PlanningPage> {
-  final List<String> _categories = [
+  final List<String> _defaultCategories = [
     'Alimentation',
     'Transport',
     'Logement',
@@ -22,12 +24,14 @@ class _PlanningPageState extends State<PlanningPage> {
     'Autres'
   ];
 
+  String? _selectedCategory;
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
-      valueListenable: Hive.box<Budget>('budgets').listenable(),
-      builder: (context, Box<Budget> budgetBox, _) {
-        if (budgetBox.isEmpty) {
+      valueListenable: DataService().getBudgetsListenable(),
+      builder: (context, Box<Budget> box, _) {
+        if (box.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -39,7 +43,7 @@ class _PlanningPageState extends State<PlanningPage> {
                 ),
                 const SizedBox(height: AppTheme.spacingM),
                 Text(
-                  'Aucun budget défini',
+                  'Aucun budget',
                   style: AppTheme.titleMedium.copyWith(
                     color: AppTheme.textSecondaryColor,
                   ),
@@ -51,10 +55,10 @@ class _PlanningPageState extends State<PlanningPage> {
                     color: AppTheme.textSecondaryColor,
                   ),
                 ),
-                const SizedBox(height: AppTheme.spacingL),
+                const SizedBox(height: AppTheme.spacingM),
                 ElevatedButton.icon(
                   onPressed: () => _showAddBudgetDialog(context),
-                  icon: const Icon(Icons.add),
+                  icon: const Icon(Icons.add, color: Colors.white),
                   label: const Text('Créer un budget'),
                 ),
               ],
@@ -65,31 +69,25 @@ class _PlanningPageState extends State<PlanningPage> {
         return SingleChildScrollView(
           padding: const EdgeInsets.all(AppTheme.spacingM),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              _buildOverviewChart(box),
+              const SizedBox(height: AppTheme.spacingL),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Vos budgets',
-                    style: AppTheme.headlineMedium,
+                    'Budgets',
+                    style: AppTheme.titleLarge,
                   ),
-                  ElevatedButton.icon(
-                    onPressed: () => _showAddBudgetDialog(context),
+                  IconButton(
                     icon: const Icon(Icons.add),
-                    label: const Text('Nouveau'),
+                    onPressed: () => _showAddBudgetDialog(context),
                   ),
                 ],
               ),
-              const SizedBox(height: AppTheme.spacingL),
-              _buildBudgetsList(budgetBox),
-              const SizedBox(height: AppTheme.spacingL),
-              Text(
-                'Vue d\'ensemble',
-                style: AppTheme.titleLarge,
-              ),
               const SizedBox(height: AppTheme.spacingM),
-              _buildOverviewChart(budgetBox),
+              _buildBudgetsList(box),
             ],
           ),
         );
@@ -97,8 +95,8 @@ class _PlanningPageState extends State<PlanningPage> {
     );
   }
 
-  Widget _buildBudgetsList(Box<Budget> budgetBox) {
-    final budgets = budgetBox.values.toList();
+  Widget _buildBudgetsList(Box<Budget> box) {
+    final budgets = DataService().getBudgets();
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -160,8 +158,8 @@ class _PlanningPageState extends State<PlanningPage> {
     );
   }
 
-  Widget _buildOverviewChart(Box<Budget> budgetBox) {
-    final budgets = budgetBox.values.toList();
+  Widget _buildOverviewChart(Box<Budget> box) {
+    final budgets = DataService().getBudgets();
     return SizedBox(
       height: 200,
       child: PieChart(
@@ -198,7 +196,7 @@ class _PlanningPageState extends State<PlanningPage> {
 
   void _showAddBudgetDialog(BuildContext context) {
     final formKey = GlobalKey<FormState>();
-    String selectedCategory = _categories.first;
+    String selectedCategory = _defaultCategories.first;
     final amountController = TextEditingController();
     final descriptionController = TextEditingController();
     DateTime startDate = DateTime.now();
@@ -214,22 +212,62 @@ class _PlanningPageState extends State<PlanningPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                DropdownButtonFormField<String>(
-                  value: selectedCategory,
-                  items: _categories.map((category) {
-                    return DropdownMenuItem(
-                      value: category,
-                      child: Text(category),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      selectedCategory = value;
+                StreamBuilder<List<String>>(
+                  stream: Stream.fromFuture(Future.value(
+                    DataService().getCategories().map((c) => c.name).toList(),
+                  )),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const CircularProgressIndicator();
                     }
+
+                    final categories = snapshot.data!;
+                    if (categories.isEmpty) {
+                      return Column(
+                        children: [
+                          const Text(
+                            'Aucune catégorie disponible',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                          const SizedBox(height: AppTheme.spacingM),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/categories');
+                            },
+                            child: const Text('Créer une catégorie'),
+                          ),
+                        ],
+                      );
+                    }
+
+                    // Réinitialiser la catégorie sélectionnée si elle n'existe plus
+                    if (_selectedCategory != null && !categories.contains(_selectedCategory)) {
+                      _selectedCategory = categories.first;
+                    } else if (_selectedCategory == null && categories.isNotEmpty) {
+                      _selectedCategory = categories.first;
+                    }
+                    
+                    return DropdownButtonFormField<String>(
+                      value: _selectedCategory,
+                      items: categories.map((category) {
+                        return DropdownMenuItem(
+                          value: category,
+                          child: Text(category),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _selectedCategory = value;
+                          });
+                        }
+                      },
+                      decoration: const InputDecoration(
+                        labelText: 'Catégorie',
+                        border: OutlineInputBorder(),
+                      ),
+                    );
                   },
-                  decoration: const InputDecoration(
-                    labelText: 'Catégorie',
-                  ),
                 ),
                 const SizedBox(height: AppTheme.spacingM),
                 TextFormField(
@@ -255,6 +293,12 @@ class _PlanningPageState extends State<PlanningPage> {
                   decoration: const InputDecoration(
                     labelText: 'Description',
                   ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Veuillez entrer une description';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: AppTheme.spacingM),
                 ListTile(
@@ -306,13 +350,13 @@ class _PlanningPageState extends State<PlanningPage> {
             onPressed: () {
               if (formKey.currentState!.validate()) {
                 final budget = Budget(
-                  category: selectedCategory,
+                  category: _selectedCategory!,
                   amount: double.parse(amountController.text),
                   startDate: startDate,
                   endDate: endDate,
                   description: descriptionController.text,
                 );
-                Hive.box<Budget>('budgets').add(budget);
+                DataService().addBudget(budget);
                 Navigator.pop(context);
               }
             },
@@ -327,8 +371,10 @@ class _PlanningPageState extends State<PlanningPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer le budget'),
-        content: const Text('Voulez-vous vraiment supprimer ce budget ?'),
+        title: const Text('Confirmer la suppression'),
+        content: Text(
+          'Voulez-vous vraiment supprimer le budget "${budget.category}" ?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -336,13 +382,10 @@ class _PlanningPageState extends State<PlanningPage> {
           ),
           TextButton(
             onPressed: () {
-              budget.delete();
+              DataService().deleteBudget(budget);
               Navigator.pop(context);
             },
-            child: Text(
-              'Supprimer',
-              style: TextStyle(color: AppTheme.errorColor),
-            ),
+            child: const Text('Supprimer'),
           ),
         ],
       ),
