@@ -58,7 +58,7 @@ class _PlanningPageState extends State<PlanningPage> {
                 const SizedBox(height: AppTheme.spacingM),
                 ElevatedButton.icon(
                   onPressed: () => _showAddBudgetDialog(context),
-                  icon: const Icon(Icons.add, color: Colors.white),
+                  icon: const Icon(Icons.add, color: Colors.blue),
                   label: const Text('Créer un budget'),
                 ),
               ],
@@ -214,7 +214,7 @@ class _PlanningPageState extends State<PlanningPage> {
               children: [
                 StreamBuilder<List<String>>(
                   stream: Stream.fromFuture(Future.value(
-                    DataService().getCategories().map((c) => c.name).toList(),
+                    DataService().getAllCategories(),
                   )),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {

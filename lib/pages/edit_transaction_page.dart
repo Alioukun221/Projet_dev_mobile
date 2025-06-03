@@ -26,16 +26,6 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
   late String _selectedCategory;
   late DateTime _selectedDate;
 
-  final List<String> _categories = [
-    'Alimentation',
-    'Transport',
-    'Logement',
-    'Loisirs',
-    'Santé',
-    'Éducation',
-    'Autres'
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -210,25 +200,55 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
               const SizedBox(height: AppTheme.spacingM),
 
               // Catégorie
-              DropdownButtonFormField<String>(
-                value: _selectedCategory,
-                items: _categories.map((category) {
-                  return DropdownMenuItem(
-                    value: category,
-                    child: Text(category),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _selectedCategory = value;
-                    });
+              StreamBuilder<List<String>>(
+                stream: Stream.fromFuture(Future.value(
+                  DataService().getAllCategories(),
+                )),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const CircularProgressIndicator();
                   }
+
+                  final categories = snapshot.data!;
+                  if (categories.isEmpty) {
+                    return Column(
+                      children: [
+                        const Text(
+                          'Aucune catégorie disponible',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                        const SizedBox(height: AppTheme.spacingM),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.pushNamed(context, '/categories');
+                          },
+                          child: const Text('Créer une catégorie'),
+                        ),
+                      ],
+                    );
+                  }
+
+                  return DropdownButtonFormField<String>(
+                    value: _selectedCategory,
+                    items: categories.map((category) {
+                      return DropdownMenuItem(
+                        value: category,
+                        child: Text(category),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          _selectedCategory = value;
+                        });
+                      }
+                    },
+                    decoration: const InputDecoration(
+                      labelText: 'Catégorie',
+                      border: OutlineInputBorder(),
+                    ),
+                  );
                 },
-                decoration: const InputDecoration(
-                  labelText: 'Catégorie',
-                  border: OutlineInputBorder(),
-                ),
               ),
               const SizedBox(height: AppTheme.spacingM),
 

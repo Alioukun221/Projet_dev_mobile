@@ -80,21 +80,46 @@ class DeveloperPage extends StatelessWidget {
             const SizedBox(height: AppTheme.spacingS),
             _buildFeatureItem(
               icon: Icons.add_circle_outline,
-              title: 'Ajout de transactions',
-              description: 'Enregistrez facilement vos dépenses et vos revenus',
+              title: 'Gestion des transactions',
+              description: 'Ajoutez, modifiez et supprimez vos dépenses et revenus avec catégorisation',
             ),
             _buildFeatureItem(
-              icon: Icons.pie_chart_outline,
-              title: 'Statistiques',
-              description:
-                  'Visualisez vos finances avec des graphiques détaillés',
+              icon: Icons.dashboard_outlined,
+              title: 'Tableau de bord',
+              description: 'Vue d\'ensemble de vos finances avec solde, dépôts et retraits',
             ),
             _buildFeatureItem(
-              icon: Icons.history,
-              title: 'Historique',
-              description:
-                  'Consultez l\'historique complet de vos transactions',
+              icon: Icons.category_outlined,
+              title: 'Gestion des catégories',
+              description: 'Catégories par défaut et personnalisées pour organiser vos transactions',
             ),
+            _buildFeatureItem(
+              icon: Icons.account_balance_wallet_outlined,
+              title: 'Budgets',
+              description: 'Créez et suivez vos budgets par catégorie avec alertes',
+            ),
+            _buildFeatureItem(
+              icon: Icons.bar_chart_outlined,
+              title: 'Statistiques détaillées',
+              description: 'Graphiques en barres et circulaires pour analyser vos dépenses et revenus',
+            ),
+            _buildFeatureItem(
+              icon: Icons.calendar_today_outlined,
+              title: 'Filtres temporels',
+              description: 'Analysez vos finances par jour, semaine, mois ou année',
+            ),
+            _buildFeatureItem(
+              icon: Icons.dark_mode_outlined,
+              title: 'Thème personnalisable',
+              description: 'Mode clair et sombre pour un confort visuel optimal',
+            ),
+            
+            _buildFeatureItem(
+              icon: Icons.storage_outlined,
+              title: 'Stockage local',
+              description: 'Données sauvegardées localement pour une confidentialité totale',
+            ),
+          
             const SizedBox(height: AppTheme.spacingL),
 
             // Developer Info
@@ -133,10 +158,50 @@ class DeveloperPage extends StatelessWidget {
                         color: AppTheme.textSecondaryColor,
                       ),
                       const SizedBox(width: AppTheme.spacingS),
-                      Text(
-                        'votre.email@example.com',
-                        style: AppTheme.bodyMedium.copyWith(
-                          color: AppTheme.textSecondaryColor,
+                      InkWell(
+                        onTap: () {
+                          final Uri emailLaunchUri = Uri(
+                            scheme: 'mailto',
+                            path: 'bmouhamadoualiou@ept.sn',
+                            queryParameters: {
+                              'subject': 'À propos de SpendWise',
+                            },
+                          );
+                          launchUrl(emailLaunchUri);
+                        },
+                        child: Text(
+                          'bmouhamadoualiou@ept.sn',
+                          style: AppTheme.bodyMedium.copyWith(
+                            color: AppTheme.primaryColor,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppTheme.spacingS),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.code,
+                        size: 16,
+                        color: AppTheme.textSecondaryColor,
+                      ),
+                      const SizedBox(width: AppTheme.spacingS),
+                      InkWell(
+                        onTap: () {
+                          final Uri githubUri = Uri.parse('https://github.com/Alioukun221');
+                          launchUrl(
+                            githubUri,
+                            mode: LaunchMode.platformDefault,
+                          );
+                        },
+                        child: Text(
+                          'https://github.com/Alioukun221',
+                          style: AppTheme.bodyMedium.copyWith(
+                            color: AppTheme.primaryColor,
+                            decoration: TextDecoration.underline,
+                          ),
                         ),
                       ),
                     ],

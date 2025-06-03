@@ -98,7 +98,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               // Catégorie
               StreamBuilder<List<String>>(
                 stream: Stream.fromFuture(Future.value(
-                  DataService().getCategories().map((c) => c.name).toList(),
+                  DataService().getAllCategories(),
                 )),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {

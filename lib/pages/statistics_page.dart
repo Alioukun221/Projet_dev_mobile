@@ -6,6 +6,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../models/transaction.dart';
 // Pour formater les dates
 import 'package:spendwise/theme/app_theme.dart';
+import 'package:spendwise/services/data_service.dart';
 
 class StatisticsPage extends StatefulWidget {
   const StatisticsPage({super.key});
@@ -20,8 +21,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return ValueListenableBuilder(
-      valueListenable: Hive.box<Transaction>('transactions').listenable(),
+      valueListenable: DataService().getTransactionsListenable(),
       builder: (context, Box<Transaction> box, _) {
         if (box.isEmpty) {
           return Center(
@@ -31,20 +34,20 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 Icon(
                   Icons.bar_chart_outlined,
                   size: 64,
-                  color: AppTheme.textSecondaryColor,
+                  color: isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
                 ),
                 const SizedBox(height: AppTheme.spacingM),
                 Text(
                   'Aucune donnée',
                   style: AppTheme.titleMedium.copyWith(
-                    color: AppTheme.textSecondaryColor,
+                    color: isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
                   ),
                 ),
                 const SizedBox(height: AppTheme.spacingS),
                 Text(
                   'Ajoutez des transactions pour voir les statistiques',
                   style: AppTheme.bodyMedium.copyWith(
-                    color: AppTheme.textSecondaryColor,
+                    color: isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
                   ),
                 ),
               ],
@@ -120,6 +123,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                       'Dépôts',
                       totalIncome,
                       AppTheme.successColor,
+                      isDarkMode,
                     ),
                   ),
                   const SizedBox(width: AppTheme.spacingM),
@@ -128,6 +132,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                       'Retraits',
                       totalExpenses,
                       AppTheme.errorColor,
+                      isDarkMode,
                     ),
                   ),
                 ],
@@ -137,17 +142,23 @@ class _StatisticsPageState extends State<StatisticsPage> {
               // Graphique en barres
               Text(
                 'Évolution des transactions',
-                style: AppTheme.titleLarge,
+                style: AppTheme.titleLarge.copyWith(
+                  color: isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
+                ),
               ),
               const SizedBox(height: AppTheme.spacingM),
-              SizedBox(
-                height: 200,
+              Container(
+                height: 300,
+                padding: const EdgeInsets.all(AppTheme.spacingM),
+                decoration: BoxDecoration(
+                  color: isDarkMode ? Colors.grey[850] : AppTheme.surfaceColor,
+                  borderRadius: BorderRadius.circular(AppTheme.borderRadiusL),
+                  boxShadow: isDarkMode ? null : AppTheme.shadowM,
+                ),
                 child: BarChart(
                   BarChartData(
                     alignment: BarChartAlignment.spaceAround,
-                    maxY: [totalIncome, totalExpenses]
-                            .reduce((a, b) => a > b ? a : b) *
-                        1.2,
+                    maxY: (totalIncome > totalExpenses ? totalIncome : totalExpenses) * 1.2,
                     barTouchData: BarTouchData(enabled: false),
                     titlesData: FlTitlesData(
                       show: true,
@@ -155,9 +166,15 @@ class _StatisticsPageState extends State<StatisticsPage> {
                         sideTitles: SideTitles(
                           showTitles: true,
                           getTitlesWidget: (value, meta) {
-                            return Text(
-                              value == 0 ? 'Dépôts' : 'Retraits',
-                              style: AppTheme.bodyMedium,
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text(
+                                value == 0 ? 'Dépôts' : 'Retraits',
+                                style: TextStyle(
+                                  color: isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
+                                  fontSize: 12,
+                                ),
+                              ),
                             );
                           },
                         ),
@@ -169,20 +186,45 @@ class _StatisticsPageState extends State<StatisticsPage> {
                           getTitlesWidget: (value, meta) {
                             return Text(
                               '${value.toInt()}',
-                              style: AppTheme.bodyMedium,
+                              style: TextStyle(
+                                color: isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
+                                fontSize: 12,
+                              ),
                             );
                           },
                         ),
                       ),
-                      rightTitles: AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
                       topTitles: AxisTitles(
                         sideTitles: SideTitles(showTitles: false),
                       ),
+                      rightTitles: AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
                     ),
-                    borderData: FlBorderData(show: false),
-                    gridData: FlGridData(show: false),
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: false,
+                      horizontalInterval: (totalIncome > totalExpenses ? totalIncome : totalExpenses) / 5,
+                      getDrawingHorizontalLine: (value) {
+                        return FlLine(
+                          color: isDarkMode ? Colors.grey[800] : Colors.grey[300],
+                          strokeWidth: 1,
+                        );
+                      },
+                    ),
+                    borderData: FlBorderData(
+                      show: true,
+                      border: Border(
+                        bottom: BorderSide(
+                          color: isDarkMode ? Colors.grey[800]! : Colors.grey[300]!,
+                          width: 1,
+                        ),
+                        left: BorderSide(
+                          color: isDarkMode ? Colors.grey[800]! : Colors.grey[300]!,
+                          width: 1,
+                        ),
+                      ),
+                    ),
                     barGroups: [
                       BarChartGroupData(
                         x: 0,
@@ -192,7 +234,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                             color: AppTheme.successColor,
                             width: 20,
                             borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(AppTheme.borderRadiusS),
+                              top: Radius.circular(6),
                             ),
                           ),
                         ],
@@ -205,7 +247,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                             color: AppTheme.errorColor,
                             width: 20,
                             borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(AppTheme.borderRadiusS),
+                              top: Radius.circular(6),
                             ),
                           ),
                         ],
@@ -219,11 +261,19 @@ class _StatisticsPageState extends State<StatisticsPage> {
               // Graphique circulaire
               Text(
                 'Répartition',
-                style: AppTheme.titleLarge,
+                style: AppTheme.titleLarge.copyWith(
+                  color: isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
+                ),
               ),
               const SizedBox(height: AppTheme.spacingM),
-              SizedBox(
-                height: 200,
+              Container(
+                height: 300,
+                padding: const EdgeInsets.all(AppTheme.spacingM),
+                decoration: BoxDecoration(
+                  color: isDarkMode ? Colors.grey[850] : AppTheme.surfaceColor,
+                  borderRadius: BorderRadius.circular(AppTheme.borderRadiusL),
+                  boxShadow: isDarkMode ? null : AppTheme.shadowM,
+                ),
                 child: PieChart(
                   PieChartData(
                     sections: [
@@ -231,7 +281,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                         value: totalIncome,
                         title: 'Dépôts',
                         color: AppTheme.successColor,
-                        radius: 50,
+                        radius: 100,
                         titleStyle: AppTheme.bodyMedium.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -241,15 +291,27 @@ class _StatisticsPageState extends State<StatisticsPage> {
                         value: totalExpenses,
                         title: 'Retraits',
                         color: AppTheme.errorColor,
-                        radius: 50,
+                        radius: 100,
                         titleStyle: AppTheme.bodyMedium.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
                       ),
                     ],
+                    centerSpaceRadius: 40,
+                    sectionsSpace: 2,
+                    startDegreeOffset: -90,
                   ),
                 ),
+              ),
+              const SizedBox(height: AppTheme.spacingL),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildLegendItem('Dépôts', AppTheme.successColor, isDarkMode),
+                  const SizedBox(width: AppTheme.spacingL),
+                  _buildLegendItem('Retraits', AppTheme.errorColor, isDarkMode),
+                ],
               ),
             ],
           ),
@@ -258,34 +320,56 @@ class _StatisticsPageState extends State<StatisticsPage> {
     );
   }
 
-  Widget _buildSummaryCard(String label, double amount, Color color) {
+  Widget _buildSummaryCard(String label, double amount, Color color, bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacingM),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
-        boxShadow: AppTheme.shadowS,
+        color: isDarkMode ? Colors.grey[850] : AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.borderRadiusL),
+        boxShadow: isDarkMode ? null : AppTheme.shadowM,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: AppTheme.bodyMedium.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
+            style: AppTheme.titleMedium.copyWith(
+              color: isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
             ),
           ),
           const SizedBox(height: AppTheme.spacingS),
           Text(
             '${amount.toStringAsFixed(2)} CFA',
-            style: AppTheme.titleMedium.copyWith(
+            style: AppTheme.titleLarge.copyWith(
               color: color,
               fontWeight: FontWeight.bold,
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLegendItem(String label, Color color, bool isDarkMode) {
+    return Row(
+      children: [
+        Container(
+          width: 16,
+          height: 16,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: AppTheme.spacingS),
+        Text(
+          label,
+          style: AppTheme.bodyMedium.copyWith(
+            color: isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }

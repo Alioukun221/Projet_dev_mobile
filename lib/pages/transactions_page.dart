@@ -8,11 +8,21 @@ import 'package:spendwise/pages/edit_transaction_page.dart';
 import 'package:spendwise/services/data_service.dart';
 import 'package:spendwise/theme/app_theme.dart';
 
-class TransactionsPage extends StatelessWidget {
+class TransactionsPage extends StatefulWidget {
   const TransactionsPage({super.key});
 
   @override
+  State<TransactionsPage> createState() => _TransactionsPageState();
+}
+
+class _TransactionsPageState extends State<TransactionsPage> {
+  bool _isDarkMode = false;
+
+  @override
   Widget build(BuildContext context) {
+    // Récupérer le thème actuel
+    _isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return ValueListenableBuilder(
       valueListenable: DataService().getTransactionsListenable(),
       builder: (context, Box<Transaction> box, _) {
@@ -24,20 +34,20 @@ class TransactionsPage extends StatelessWidget {
                 Icon(
                   Icons.receipt_long_outlined,
                   size: 64,
-                  color: AppTheme.textSecondaryColor,
+                  color: _isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
                 ),
                 const SizedBox(height: AppTheme.spacingM),
                 Text(
                   'Aucune transaction',
                   style: AppTheme.titleMedium.copyWith(
-                    color: AppTheme.textSecondaryColor,
+                    color: _isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
                   ),
                 ),
                 const SizedBox(height: AppTheme.spacingS),
                 Text(
                   'Ajoutez votre première transaction',
                   style: AppTheme.bodyMedium.copyWith(
-                    color: AppTheme.textSecondaryColor,
+                    color: _isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
                   ),
                 ),
               ],
@@ -62,9 +72,9 @@ class TransactionsPage extends StatelessWidget {
             return Container(
               margin: const EdgeInsets.only(bottom: AppTheme.spacingS),
               decoration: BoxDecoration(
-                color: AppTheme.surfaceColor,
+                color: _isDarkMode ? Colors.grey[850] : AppTheme.surfaceColor,
                 borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
-                boxShadow: AppTheme.shadowS,
+                boxShadow: _isDarkMode ? null : AppTheme.shadowS,
               ),
               child: ListTile(
                 leading: CircleAvatar(
@@ -76,12 +86,15 @@ class TransactionsPage extends StatelessWidget {
                 ),
                 title: Text(
                   transaction.description,
-                  style: AppTheme.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+                  style: AppTheme.bodyLarge.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: _isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
+                  ),
                 ),
                 subtitle: Text(
                   DateFormat('dd/MM/yyyy').format(transaction.date),
                   style: AppTheme.bodyMedium.copyWith(
-                    color: AppTheme.textSecondaryColor,
+                    color: _isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
                   ),
                 ),
                 trailing: Column(
@@ -98,7 +111,7 @@ class TransactionsPage extends StatelessWidget {
                     Text(
                       transaction.category,
                       style: AppTheme.bodyMedium.copyWith(
-                        color: AppTheme.textSecondaryColor,
+                        color: _isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
                       ),
                     ),
                   ],

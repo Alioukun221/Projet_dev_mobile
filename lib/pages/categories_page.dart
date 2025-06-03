@@ -25,6 +25,16 @@ class _CategoriesPageState extends State<CategoriesPage> {
     'Autres'
   ];
 
+  final Map<String, IconData> _defaultCategoryIcons = {
+    'Alimentation': Icons.restaurant,
+    'Transport': Icons.directions_car,
+    'Logement': Icons.home,
+    'Loisirs': Icons.sports_esports,
+    'Santé': Icons.medical_services,
+    'Éducation': Icons.school,
+    'Autres': Icons.more_horiz,
+  };
+
   @override
   void initState() {
     super.initState();
@@ -43,17 +53,34 @@ class _CategoriesPageState extends State<CategoriesPage> {
     }
   }
 
-  void _restoreDefaultCategories() {
-    // Supprimer toutes les catégories existantes
-    final existingCategories = DataService().getCategories();
-    for (final category in existingCategories) {
-      DataService().deleteCategory(category);
-    }
+  void _restoreDefaultCategories() async {
+    try {
+      // Restaurer les catégories par défaut via le service
+      await DataService().restoreDefaultCategories();
+      
+      // Initialiser les catégories par défaut
+      await DataService().initializeDefaultCategories();
 
-    // Ajouter les catégories par défaut
-    for (final categoryName in _defaultCategories) {
-      final category = Category(name: categoryName);
-      DataService().addCategory(category);
+      if (!mounted) return;
+      
+      // Rafraîchir l'interface
+      setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+      
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Erreur'),
+          content: Text('Erreur lors de la restauration des catégories : ${e.toString()}'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
     }
   }
 
@@ -63,13 +90,31 @@ class _CategoriesPageState extends State<CategoriesPage> {
     super.dispose();
   }
 
-  void _addCategory() {
+  void _addCategory() async {
     if (_formKey.currentState!.validate()) {
-      final category = Category(
-        name: _nameController.text,
-      );
-      DataService().addCategory(category);
-      _nameController.clear();
+      try {
+        final category = Category(
+          name: _nameController.text,
+        );
+        await DataService().addCategory(category);
+        _nameController.clear();
+      } catch (e) {
+        if (!mounted) return;
+        
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Erreur'),
+            content: Text(e.toString()),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
     }
   }
 
@@ -191,10 +236,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                         leading: CircleAvatar(
                           backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
                           child: Icon(
-                            IconData(
-                              int.parse(category.icon),
-                              fontFamily: 'MaterialIcons',
-                            ),
+                            _defaultCategoryIcons[category.name] ?? Icons.category,
                             color: AppTheme.primaryColor,
                           ),
                         ),

@@ -232,6 +232,7 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      const SizedBox(height: 100),
                     ],
                   ),
                 ),
@@ -246,7 +247,7 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
 
   Widget _buildPieChart(double income, double expenses) {
     return Container(
-      height: 300,
+      height: 400,
       padding: const EdgeInsets.all(AppTheme.spacingL),
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor,
@@ -395,19 +396,23 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
 
   Widget _buildTransactionTile(Transaction tx) {
     final isDeposit = tx.type == 'dépôt';
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       margin: const EdgeInsets.symmetric(vertical: AppTheme.spacingXS),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: isDarkMode ? Colors.grey[850] : AppTheme.surfaceColor,
         borderRadius: BorderRadius.circular(AppTheme.borderRadiusL),
-        boxShadow: AppTheme.shadowM,
+        boxShadow: isDarkMode ? null : AppTheme.shadowM,
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(AppTheme.spacingM),
         leading: Container(
           padding: const EdgeInsets.all(AppTheme.spacingS),
           decoration: BoxDecoration(
-            color: isDeposit ? AppTheme.successColor.withOpacity(0.1) : AppTheme.errorColor.withOpacity(0.1),
+            color: isDeposit 
+                ? AppTheme.successColor.withOpacity(isDarkMode ? 0.2 : 0.1) 
+                : AppTheme.errorColor.withOpacity(isDarkMode ? 0.2 : 0.1),
             borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
           ),
           child: Icon(
@@ -419,7 +424,7 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
           tx.description,
           style: AppTheme.bodyLarge.copyWith(
             fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimaryColor,
+            color: isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
           ),
         ),
         subtitle: Row(
@@ -427,13 +432,13 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
             Icon(
               Icons.calendar_today,
               size: 14,
-              color: AppTheme.textSecondaryColor,
+              color: isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
             ),
             const SizedBox(width: AppTheme.spacingXS),
             Text(
               DateFormat('dd/MM/yyyy').format(tx.date),
               style: AppTheme.bodyMedium.copyWith(
-                color: AppTheme.textSecondaryColor,
+                color: isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
               ),
             ),
           ],
@@ -444,7 +449,9 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
             vertical: AppTheme.spacingS,
           ),
           decoration: BoxDecoration(
-            color: isDeposit ? AppTheme.successColor.withOpacity(0.1) : AppTheme.errorColor.withOpacity(0.1),
+            color: isDeposit 
+                ? AppTheme.successColor.withOpacity(isDarkMode ? 0.2 : 0.1) 
+                : AppTheme.errorColor.withOpacity(isDarkMode ? 0.2 : 0.1),
             borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
           ),
           child: Text(
