@@ -2,16 +2,17 @@
 
 import 'package:flutter/material.dart';
 import 'package:spendwise/models/transaction.dart';
-import 'package:spendwise/models/budget.dart';
 import 'package:spendwise/services/data_service.dart';
 import 'package:spendwise/theme/app_theme.dart';
 
 class EditTransactionPage extends StatefulWidget {
   final Transaction transaction;
+  final bool isDarkMode;
 
   const EditTransactionPage({
     super.key,
     required this.transaction,
+    required this.isDarkMode,
   });
 
   @override
@@ -26,11 +27,15 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
   late String _selectedCategory;
   late DateTime _selectedDate;
 
+  bool get _isDarkMode => widget.isDarkMode;
+
   @override
   void initState() {
     super.initState();
-    _descriptionController = TextEditingController(text: widget.transaction.description);
-    _amountController = TextEditingController(text: widget.transaction.montant.toString());
+    _descriptionController =
+        TextEditingController(text: widget.transaction.description);
+    _amountController =
+        TextEditingController(text: widget.transaction.montant.toString());
     _selectedType = widget.transaction.type;
     _selectedCategory = widget.transaction.category;
     _selectedDate = widget.transaction.date;
@@ -122,8 +127,16 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor:
+          _isDarkMode ? Colors.grey[800] : AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Modifier la transaction'),
+        backgroundColor: _isDarkMode ? Colors.grey[850] : AppTheme.surfaceColor,
+        foregroundColor: _isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
+        elevation: 2,
+        title: Text('Modifier la transaction',
+            style: TextStyle(
+                color: _isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
+                fontWeight: FontWeight.w400)),
         centerTitle: true,
         actions: [
           IconButton(
@@ -132,21 +145,41 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Confirmer la suppression'),
-                  content: const Text('Voulez-vous vraiment supprimer cette transaction ?'),
+                  title: Text('Confirmer la suppression',
+                      style: TextStyle(
+                        color: _isDarkMode
+                            ? Colors.white
+                            : AppTheme.textPrimaryColor,
+                      )),
+                  content:
+                      Text('Voulez-vous vraiment supprimer cette transaction ?',
+                          style: TextStyle(
+                            color: _isDarkMode
+                                ? Colors.white
+                                : AppTheme.textPrimaryColor,
+                          )),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Annuler'),
+                      child: Text('Annuler',
+                          style: TextStyle(
+                            color: _isDarkMode
+                                ? Colors.white
+                                : AppTheme.textPrimaryColor,
+                          )),
                     ),
                     TextButton(
                       onPressed: () {
                         // Annuler la dépense dans le budget si nécessaire
                         if (widget.transaction.type == 'retrait') {
-                          final budgets = DataService().getBudgets().where((budget) {
-                            return budget.category == widget.transaction.category &&
-                                widget.transaction.date.isAfter(budget.startDate) &&
-                                widget.transaction.date.isBefore(budget.endDate);
+                          final budgets =
+                              DataService().getBudgets().where((budget) {
+                            return budget.category ==
+                                    widget.transaction.category &&
+                                widget.transaction.date
+                                    .isAfter(budget.startDate) &&
+                                widget.transaction.date
+                                    .isBefore(budget.endDate);
                           }).toList();
 
                           if (budgets.isNotEmpty) {
@@ -155,7 +188,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                             DataService().updateBudget(budget);
                           }
                         }
-                        
+
                         DataService().deleteTransaction(widget.transaction);
                         Navigator.pop(context); // Close dialog
                         Navigator.pop(context); // Return to previous screen
@@ -196,6 +229,28 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                     _selectedType = newSelection.first;
                   });
                 },
+                style: ButtonStyle(
+                  backgroundColor: MaterialStateProperty.resolveWith<Color>(
+                    (states) {
+                      if (states.contains(MaterialState.selected)) {
+                        return _isDarkMode
+                            ? AppTheme.primaryColor
+                            : AppTheme.primaryColor.withOpacity(0.15);
+                      }
+                      return _isDarkMode ? Colors.grey[700]! : Colors.white;
+                    },
+                  ),
+                  foregroundColor: MaterialStateProperty.resolveWith<Color>(
+                    (states) {
+                      if (states.contains(MaterialState.selected)) {
+                        return Colors.white;
+                      }
+                      return _isDarkMode
+                          ? Colors.white
+                          : const Color.fromARGB(255, 64, 57, 57);
+                    },
+                  ),
+                ),
               ),
               const SizedBox(height: AppTheme.spacingM),
 
@@ -213,15 +268,23 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                   if (categories.isEmpty) {
                     return Column(
                       children: [
-                        const Text(
+                        Text(
                           'Aucune catégorie disponible',
-                          style: TextStyle(color: Colors.red),
+                          style: TextStyle(
+                            color: _isDarkMode ? Colors.red[200] : Colors.red,
+                          ),
                         ),
                         const SizedBox(height: AppTheme.spacingM),
                         ElevatedButton(
                           onPressed: () {
                             Navigator.pushNamed(context, '/categories');
                           },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _isDarkMode
+                                ? AppTheme.primaryColor
+                                : AppTheme.primaryColor,
+                            foregroundColor: Colors.white,
+                          ),
                           child: const Text('Créer une catégorie'),
                         ),
                       ],
@@ -229,11 +292,19 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                   }
 
                   return DropdownButtonFormField<String>(
+                    menuMaxHeight: 400,
                     value: _selectedCategory,
                     items: categories.map((category) {
                       return DropdownMenuItem(
                         value: category,
-                        child: Text(category),
+                        child: Text(
+                          category,
+                          style: TextStyle(
+                            color: _isDarkMode
+                                ? Colors.white
+                                : const Color.fromARGB(255, 109, 98, 98),
+                          ),
+                        ),
                       );
                     }).toList(),
                     onChanged: (value) {
@@ -243,10 +314,27 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                         });
                       }
                     },
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Catégorie',
-                      border: OutlineInputBorder(),
+                      labelStyle: TextStyle(
+                        color: _isDarkMode
+                            ? Colors.white70
+                            : AppTheme.textSecondaryColor,
+                      ),
+                      filled: true,
+                      fillColor: _isDarkMode ? Colors.grey[700] : Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius:
+                            BorderRadius.circular(AppTheme.borderRadiusM),
+                        borderSide: BorderSide(
+                          color: _isDarkMode
+                              ? Colors.white24
+                              : AppTheme.primaryColor,
+                        ),
+                      ),
                     ),
+                    dropdownColor:
+                        _isDarkMode ? Colors.grey[900] : Colors.white,
                   );
                 },
               ),
@@ -256,10 +344,31 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
               TextFormField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
+                style: TextStyle(
+                  color: _isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
+                ),
+                decoration: InputDecoration(
                   labelText: 'Montant',
+                  prefixStyle: TextStyle(
+                    color: _isDarkMode
+                        ? Colors.white70
+                        : AppTheme.textSecondaryColor,
+                  ),
+                  labelStyle: TextStyle(
+                    color: _isDarkMode
+                        ? Colors.white70
+                        : AppTheme.textSecondaryColor,
+                  ),
                   prefixText: 'CFA ',
-                  border: OutlineInputBorder(),
+                  filled: true,
+                  fillColor: _isDarkMode ? Colors.grey[700] : Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
+                    borderSide: BorderSide(
+                      color:
+                          _isDarkMode ? Colors.white24 : AppTheme.primaryColor,
+                    ),
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -276,9 +385,25 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
               // Description
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(
+                style: TextStyle(
+                  color: _isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
+                ),
+                decoration: InputDecoration(
                   labelText: 'Description',
-                  border: OutlineInputBorder(),
+                  labelStyle: TextStyle(
+                    color: _isDarkMode
+                        ? Colors.white70
+                        : AppTheme.textSecondaryColor,
+                  ),
+                  filled: true,
+                  fillColor: _isDarkMode ? Colors.grey[700] : Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
+                    borderSide: BorderSide(
+                      color:
+                          _isDarkMode ? Colors.white24 : AppTheme.primaryColor,
+                    ),
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -291,11 +416,26 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
 
               // Date
               ListTile(
-                title: const Text('Date'),
+                tileColor: _isDarkMode ? Colors.grey[700] : Colors.white,
+                title: Text(
+                  'Date',
+                  style: TextStyle(
+                    color:
+                        _isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
+                  ),
+                ),
                 subtitle: Text(
                   '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                  style: TextStyle(
+                    color: _isDarkMode
+                        ? Colors.white70
+                        : AppTheme.textSecondaryColor,
+                  ),
                 ),
-                trailing: const Icon(Icons.calendar_today),
+                trailing: Icon(
+                  Icons.calendar_today,
+                  color: _isDarkMode ? Colors.white : AppTheme.primaryColor,
+                ),
                 onTap: () => _selectDate(context),
               ),
               const SizedBox(height: AppTheme.spacingM),
@@ -303,6 +443,10 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
               // Bouton de mise à jour
               ElevatedButton(
                 onPressed: _updateTransaction,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                ),
                 child: const Text('Mettre à jour'),
               ),
             ],

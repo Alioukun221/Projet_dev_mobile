@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/pages/home_page.dart'; // Importez la page principale de l'app
 import 'package:spendwise/theme/app_theme.dart';
 
@@ -10,7 +11,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
@@ -93,7 +95,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             FadeTransition(
               opacity: _animation,
               child: Text(
-                'Gérez vos finances en toute simplicité',
+                AppLocalizations.of(context)!.splashText,
                 style: AppTheme.bodyLarge.copyWith(
                   color: Colors.white.withOpacity(0.8),
                 ),

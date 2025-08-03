@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/models/category.dart';
 import 'package:spendwise/services/data_service.dart';
 import 'package:spendwise/theme/app_theme.dart';
 
 class CategoriesPage extends StatefulWidget {
-  const CategoriesPage({super.key});
+  final bool isDarkMode;
+  const CategoriesPage({super.key, required this.isDarkMode});
 
   @override
   State<CategoriesPage> createState() => _CategoriesPageState();
@@ -35,6 +37,8 @@ class _CategoriesPageState extends State<CategoriesPage> {
     'Autres': Icons.more_horiz,
   };
 
+  bool get _isDarkMode => widget.isDarkMode;
+
   @override
   void initState() {
     super.initState();
@@ -57,22 +61,23 @@ class _CategoriesPageState extends State<CategoriesPage> {
     try {
       // Restaurer les catégories par défaut via le service
       await DataService().restoreDefaultCategories();
-      
+
       // Initialiser les catégories par défaut
       await DataService().initializeDefaultCategories();
 
       if (!mounted) return;
-      
+
       // Rafraîchir l'interface
       setState(() {});
     } catch (e) {
       if (!mounted) return;
-      
+
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Erreur'),
-          content: Text('Erreur lors de la restauration des catégories : ${e.toString()}'),
+          title: Text(AppLocalizations.of(context)!.error),
+          content: Text(
+              '${AppLocalizations.of(context)!.restoreCategoryError} ${e.toString()}'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -100,11 +105,11 @@ class _CategoriesPageState extends State<CategoriesPage> {
         _nameController.clear();
       } catch (e) {
         if (!mounted) return;
-        
+
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Erreur'),
+            title: Text(AppLocalizations.of(context)!.error),
             content: Text(e.toString()),
             actions: [
               TextButton(
@@ -121,31 +126,52 @@ class _CategoriesPageState extends State<CategoriesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: _isDarkMode ? Colors.grey[850] : Colors.white,
       appBar: AppBar(
-        title: const Text('Catégories'),
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back,
+            color: _isDarkMode ? Colors.white : Colors.black54,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        backgroundColor: _isDarkMode ? Colors.grey[850] : Colors.white,
+        elevation: 2,
+        title: Text(
+          AppLocalizations.of(context)!.categories,
+          style: TextStyle(
+            color: _isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
+            fontSize: 20,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.restore),
+            icon: Icon(
+              Icons.restore,
+              color: _isDarkMode ? Colors.white : Colors.black,
+            ),
             onPressed: () {
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Restaurer les catégories par défaut'),
-                  content: const Text(
-                    'Voulez-vous restaurer les catégories par défaut ? Cela supprimera toutes les catégories personnalisées.',
-                  ),
+                  title: Text(
+                      AppLocalizations.of(context)!.restoreDefaultCategories),
+                  content: Text(
+                      AppLocalizations.of(context)!.restoreDefaultCategories),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Annuler'),
+                      child: Text(AppLocalizations.of(context)!.cancel),
                     ),
                     TextButton(
                       onPressed: () {
                         _restoreDefaultCategories();
                         Navigator.pop(context);
                       },
-                      child: const Text('Restaurer'),
+                      child: Text(AppLocalizations.of(context)!.restore),
                     ),
                   ],
                 ),
@@ -165,13 +191,24 @@ class _CategoriesPageState extends State<CategoriesPage> {
                 children: [
                   TextFormField(
                     controller: _nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nom de la catégorie',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context)!.addCategory,
+                      border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.borderRadiusM),
+                          borderSide: BorderSide(
+                            color: _isDarkMode
+                                ? const Color.fromARGB(255, 63, 60, 60)
+                                : (const Color.fromARGB(255, 65, 61,
+                                    61)), // ou AppTheme.primaryColor
+                            width: 5.0,
+                          )),
+                      filled: true,
+                      fillColor: Colors.white30,
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Veuillez entrer un nom';
+                        return AppLocalizations.of(context)!.enterName;
                       }
                       return null;
                     },
@@ -201,14 +238,14 @@ class _CategoriesPageState extends State<CategoriesPage> {
                         ),
                         const SizedBox(height: AppTheme.spacingM),
                         Text(
-                          'Aucune catégorie',
+                          AppLocalizations.of(context)!.noCategory,
                           style: AppTheme.titleMedium.copyWith(
                             color: AppTheme.textSecondaryColor,
                           ),
                         ),
                         const SizedBox(height: AppTheme.spacingS),
                         Text(
-                          'Ajoutez votre première catégorie',
+                          AppLocalizations.of(context)!.addYourFirstCategory,
                           style: AppTheme.bodyMedium.copyWith(
                             color: AppTheme.textSecondaryColor,
                           ),
@@ -223,20 +260,26 @@ class _CategoriesPageState extends State<CategoriesPage> {
                   itemCount: box.length,
                   itemBuilder: (context, index) {
                     final category = box.getAt(index)!;
-                    final isDefault = _defaultCategories.contains(category.name);
-                    
+                    final isDefault =
+                        _defaultCategories.contains(category.name);
+
                     return Container(
                       margin: const EdgeInsets.only(bottom: AppTheme.spacingS),
                       decoration: BoxDecoration(
-                        color: AppTheme.surfaceColor,
-                        borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
-                        boxShadow: AppTheme.shadowS,
+                        color: _isDarkMode
+                            ? Colors.grey[500]
+                            : AppTheme.surfaceColor,
+                        borderRadius:
+                            BorderRadius.circular(AppTheme.borderRadiusL),
+                        boxShadow: AppTheme.shadowM,
                       ),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                          backgroundColor:
+                              AppTheme.primaryColor.withOpacity(0.1),
                           child: Icon(
-                            _defaultCategoryIcons[category.name] ?? Icons.category,
+                            _defaultCategoryIcons[category.name] ??
+                                Icons.category,
                             color: AppTheme.primaryColor,
                           ),
                         ),
@@ -246,28 +289,35 @@ class _CategoriesPageState extends State<CategoriesPage> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        subtitle: isDefault ? const Text('Catégorie par défaut') : null,
+                        subtitle: isDefault
+                            ? Text(
+                                AppLocalizations.of(context)!.defaultCategory)
+                            : Text(
+                                AppLocalizations.of(context)!.customCategory),
                         trailing: IconButton(
                           icon: const Icon(Icons.delete_outline),
                           onPressed: () {
                             showDialog(
                               context: context,
                               builder: (context) => AlertDialog(
-                                title: const Text('Confirmer la suppression'),
+                                title: Text(AppLocalizations.of(context)!
+                                    .deleteConfirmationTitle),
                                 content: Text(
-                                  'Voulez-vous vraiment supprimer la catégorie "${category.name}" ?',
+                                  '${AppLocalizations.of(context)!.deleteConfirmationContent} ${category.name}" ?',
                                 ),
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(context),
-                                    child: const Text('Annuler'),
+                                    child: Text(
+                                        AppLocalizations.of(context)!.cancel),
                                   ),
                                   TextButton(
                                     onPressed: () {
                                       DataService().deleteCategory(category);
                                       Navigator.pop(context);
                                     },
-                                    child: const Text('Supprimer'),
+                                    child: Text(
+                                        AppLocalizations.of(context)!.delete),
                                   ),
                                 ],
                               ),
@@ -285,4 +335,4 @@ class _CategoriesPageState extends State<CategoriesPage> {
       ),
     );
   }
-} 
+}

@@ -8,7 +8,7 @@ class AppTheme {
   static const Color errorColor = Color(0xFFE53935);
   static const Color backgroundColor = Color(0xFFF5F5F5);
   static const Color surfaceColor = Colors.white;
-  static const Color textPrimaryColor = Color(0xFF212121);
+  static const Color textPrimaryColor = Color.fromARGB(255, 34, 31, 31);
   static const Color textSecondaryColor = Color(0xFF757575);
 
   // Spacing
@@ -77,6 +77,21 @@ class AppTheme {
     color: textPrimaryColor,
   );
 
+  static const TextStyle bodySmall = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.normal,
+    color: textPrimaryColor,
+  );
+
+  // Font Sizes
+  static const double fontSizeXS = 12.0;
+  static const double fontSizeS = 14.0;
+  static const double fontSizeM = 16.0;
+  static const double fontSizeL = 18.0;
+  static const double fontSizeXL = 20.0;
+  static const double fontSizeXXL = 24.0;
+  static const double fontSizeXXXL = 32.0;
+
   // Theme Data
   static ThemeData get lightTheme {
     return ThemeData(
@@ -101,7 +116,7 @@ class AppTheme {
           color: textPrimaryColor,
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: surfaceColor,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -145,4 +160,4 @@ class AppTheme {
       ),
     );
   }
-} 
+}

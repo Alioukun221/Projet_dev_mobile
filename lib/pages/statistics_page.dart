@@ -1,10 +1,9 @@
-// ignore_for_file: use_key_in_widget_constructors, deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:spendwise/l10n/app_localizations.dart';
 import '../models/transaction.dart';
-// Pour formater les dates
+
 import 'package:spendwise/theme/app_theme.dart';
 import 'package:spendwise/services/data_service.dart';
 
@@ -34,20 +33,26 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 Icon(
                   Icons.bar_chart_outlined,
                   size: 64,
-                  color: isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
+                  color: isDarkMode
+                      ? Colors.grey[400]
+                      : AppTheme.textSecondaryColor,
                 ),
                 const SizedBox(height: AppTheme.spacingM),
                 Text(
-                  'Aucune donnée',
+                  AppLocalizations.of(context)!.noData,
                   style: AppTheme.titleMedium.copyWith(
-                    color: isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
+                    color: isDarkMode
+                        ? Colors.grey[400]
+                        : AppTheme.textSecondaryColor,
                   ),
                 ),
                 const SizedBox(height: AppTheme.spacingS),
                 Text(
-                  'Ajoutez des transactions pour voir les statistiques',
+                  AppLocalizations.of(context)!.noDataDescription,
                   style: AppTheme.bodyMedium.copyWith(
-                    color: isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
+                    color: isDarkMode
+                        ? Colors.grey[400]
+                        : AppTheme.textSecondaryColor,
                   ),
                 ),
               ],
@@ -98,14 +103,55 @@ class _StatisticsPageState extends State<StatisticsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Période sélection
+              SizedBox(
+                height: 20,
+              ),
               SegmentedButton<String>(
-                segments: _periods.map((period) {
-                  return ButtonSegment<String>(
-                    value: period,
-                    label: Text(period),
-                  );
-                }).toList(),
+                showSelectedIcon: false,
+                style: ButtonStyle(
+                  backgroundColor: MaterialStateProperty.resolveWith<Color?>(
+                    (Set<MaterialState> states) {
+                      if (states.contains(MaterialState.selected)) {
+                        return Theme.of(context)
+                            .colorScheme
+                            .primary; // Or any custom color
+                      }
+                      return null; // Use default theme color for unselected
+                    },
+                  ),
+                  foregroundColor: MaterialStateProperty.resolveWith<Color?>(
+                      (Set<MaterialState> states) {
+                    if (states.contains(MaterialState.selected)) {
+                      return Theme.of(context)
+                          .colorScheme
+                          .onPrimary; // Text/icon color when selected
+                    }
+                    return Theme.of(context).colorScheme.onSurface;
+                  }),
+                  minimumSize:
+                      MaterialStateProperty.all(Size(double.infinity, 80)),
+                  visualDensity: VisualDensity.compact,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                expandedInsets: EdgeInsets.symmetric(horizontal: 0),
+                segments: <ButtonSegment<String>>[
+                  ButtonSegment<String>(
+                    value: _periods[0],
+                    label: Text(AppLocalizations.of(context)!.day),
+                  ),
+                  ButtonSegment<String>(
+                    value: _periods[1],
+                    label: Text(AppLocalizations.of(context)!.week),
+                  ),
+                  ButtonSegment<String>(
+                    value: _periods[2],
+                    label: Text(AppLocalizations.of(context)!.month),
+                  ),
+                  ButtonSegment<String>(
+                    value: _periods[3],
+                    label: Text(AppLocalizations.of(context)!.year),
+                  ),
+                ],
                 selected: {_selectedPeriod},
                 onSelectionChanged: (Set<String> newSelection) {
                   setState(() {
@@ -120,7 +166,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 children: [
                   Expanded(
                     child: _buildSummaryCard(
-                      'Dépôts',
+                      AppLocalizations.of(context)!.deposit,
                       totalIncome,
                       AppTheme.successColor,
                       isDarkMode,
@@ -129,7 +175,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                   const SizedBox(width: AppTheme.spacingM),
                   Expanded(
                     child: _buildSummaryCard(
-                      'Retraits',
+                      AppLocalizations.of(context)!.withdrawal,
                       totalExpenses,
                       AppTheme.errorColor,
                       isDarkMode,
@@ -141,10 +187,11 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
               // Graphique en barres
               Text(
-                'Évolution des transactions',
+                AppLocalizations.of(context)!.transactionEvolution,
                 style: AppTheme.titleLarge.copyWith(
-                  color: isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
-                ),
+                    color:
+                        isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
+                    fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: AppTheme.spacingM),
               Container(
@@ -158,7 +205,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 child: BarChart(
                   BarChartData(
                     alignment: BarChartAlignment.spaceAround,
-                    maxY: (totalIncome > totalExpenses ? totalIncome : totalExpenses) * 1.2,
+                    maxY: (totalIncome > totalExpenses
+                            ? totalIncome
+                            : totalExpenses) *
+                        1.2,
                     barTouchData: BarTouchData(enabled: false),
                     titlesData: FlTitlesData(
                       show: true,
@@ -169,9 +219,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
                             return Padding(
                               padding: const EdgeInsets.only(top: 8.0),
                               child: Text(
-                                value == 0 ? 'Dépôts' : 'Retraits',
+                                value == 0
+                                    ? AppLocalizations.of(context)!.deposit
+                                    : AppLocalizations.of(context)!.withdrawal,
                                 style: TextStyle(
-                                  color: isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
+                                  color: isDarkMode
+                                      ? Colors.grey[400]
+                                      : AppTheme.textSecondaryColor,
                                   fontSize: 12,
                                 ),
                               ),
@@ -187,7 +241,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
                             return Text(
                               '${value.toInt()}',
                               style: TextStyle(
-                                color: isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
+                                color: isDarkMode
+                                    ? Colors.grey[400]
+                                    : AppTheme.textSecondaryColor,
                                 fontSize: 12,
                               ),
                             );
@@ -204,10 +260,15 @@ class _StatisticsPageState extends State<StatisticsPage> {
                     gridData: FlGridData(
                       show: true,
                       drawVerticalLine: false,
-                      horizontalInterval: (totalIncome > totalExpenses ? totalIncome : totalExpenses) / 5,
+                      horizontalInterval: ((totalIncome > totalExpenses
+                                  ? totalIncome
+                                  : totalExpenses) /
+                              5)
+                          .clamp(1, double.infinity),
                       getDrawingHorizontalLine: (value) {
                         return FlLine(
-                          color: isDarkMode ? Colors.grey[800] : Colors.grey[300],
+                          color:
+                              isDarkMode ? Colors.grey[800] : Colors.grey[300],
                           strokeWidth: 1,
                         );
                       },
@@ -216,11 +277,15 @@ class _StatisticsPageState extends State<StatisticsPage> {
                       show: true,
                       border: Border(
                         bottom: BorderSide(
-                          color: isDarkMode ? Colors.grey[800]! : Colors.grey[300]!,
+                          color: isDarkMode
+                              ? Colors.grey[800]!
+                              : Colors.grey[300]!,
                           width: 1,
                         ),
                         left: BorderSide(
-                          color: isDarkMode ? Colors.grey[800]! : Colors.grey[300]!,
+                          color: isDarkMode
+                              ? Colors.grey[800]!
+                              : Colors.grey[300]!,
                           width: 1,
                         ),
                       ),
@@ -260,10 +325,11 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
               // Graphique circulaire
               Text(
-                'Répartition',
+                AppLocalizations.of(context)!.breakdown,
                 style: AppTheme.titleLarge.copyWith(
-                  color: isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
-                ),
+                    color:
+                        isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
+                    fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: AppTheme.spacingM),
               Container(
@@ -279,7 +345,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                     sections: [
                       PieChartSectionData(
                         value: totalIncome,
-                        title: 'Dépôts',
+                        title: AppLocalizations.of(context)!.deposit,
                         color: AppTheme.successColor,
                         radius: 100,
                         titleStyle: AppTheme.bodyMedium.copyWith(
@@ -289,7 +355,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                       ),
                       PieChartSectionData(
                         value: totalExpenses,
-                        title: 'Retraits',
+                        title: AppLocalizations.of(context)!.withdrawal,
                         color: AppTheme.errorColor,
                         radius: 100,
                         titleStyle: AppTheme.bodyMedium.copyWith(
@@ -308,9 +374,11 @@ class _StatisticsPageState extends State<StatisticsPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildLegendItem('Dépôts', AppTheme.successColor, isDarkMode),
+                  _buildLegendItem(AppLocalizations.of(context)!.deposit,
+                      AppTheme.successColor, isDarkMode),
                   const SizedBox(width: AppTheme.spacingL),
-                  _buildLegendItem('Retraits', AppTheme.errorColor, isDarkMode),
+                  _buildLegendItem(AppLocalizations.of(context)!.withdrawal,
+                      AppTheme.errorColor, isDarkMode),
                 ],
               ),
             ],
@@ -320,7 +388,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
     );
   }
 
-  Widget _buildSummaryCard(String label, double amount, Color color, bool isDarkMode) {
+  Widget _buildSummaryCard(
+      String label, double amount, Color color, bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacingM),
       decoration: BoxDecoration(
@@ -334,16 +403,16 @@ class _StatisticsPageState extends State<StatisticsPage> {
           Text(
             label,
             style: AppTheme.titleMedium.copyWith(
-              color: isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
+              fontSize: 17,
+              color:
+                  isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
             ),
           ),
           const SizedBox(height: AppTheme.spacingS),
           Text(
-            '${amount.toStringAsFixed(2)} CFA',
+            '${amount.toStringAsFixed(1)} CFA',
             style: AppTheme.titleLarge.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
-            ),
+                color: color, fontWeight: FontWeight.w700, fontSize: 17),
           ),
         ],
       ),

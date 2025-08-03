@@ -1,11 +1,9 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/models/transaction.dart';
-import 'package:spendwise/pages/categories_page.dart';
 import 'package:spendwise/theme/app_theme.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -15,24 +13,33 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> with SingleTickerProviderStateMixin {
+class _DashboardPageState extends State<DashboardPage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
+  bool _isDarkMode = false;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 600),
       vsync: this,
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: Curves.easeIn,
+        curve: Curves.easeOut,
       ),
     );
     _controller.forward();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = this.context;
+      setState(() {
+        _isDarkMode = Theme.of(context).brightness == Brightness.dark;
+      });
+    });
   }
 
   @override
@@ -43,6 +50,8 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
+    _isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return ValueListenableBuilder(
       valueListenable: Hive.box<Transaction>('transactions').listenable(),
       builder: (context, Box<Transaction> transactionBox, _) {
@@ -67,142 +76,96 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
         return FadeTransition(
           opacity: _fadeAnimation,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppTheme.spacingM),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                SizedBox(height: 20),
+                // Header simple
                 Container(
-                  padding: const EdgeInsets.all(AppTheme.spacingL),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppTheme.primaryColor.withOpacity(0.8),
-                        AppTheme.primaryColor.withOpacity(0.4),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                    color: _isDarkMode ? Colors.grey[900] : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: _isDarkMode ? Colors.grey[800]! : Colors.grey[200]!,
                     ),
-                    borderRadius: BorderRadius.circular(AppTheme.borderRadiusL),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryColor.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          // Container(
-                          //   padding: const EdgeInsets.all(AppTheme.spacingS),
-                          //   decoration: BoxDecoration(
-                          //     color: Colors.white.withOpacity(0.2),
-                          //     borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
-                          //   ),
-                          //   child: const Icon(
-                          //     Icons.account_balance_wallet,
-                          //     color: Colors.white,
-                          //   ),
-                          // ),
-                          // const SizedBox(width: AppTheme.spacingM),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Bonjour 👋',
-                                      style: AppTheme.headlineMedium.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: AppTheme.spacingXS),
-                                Text(
-                                  'Voici le résumé de vos finances',
-                                  style: AppTheme.titleMedium.copyWith(
-                                    color: Colors.white.withOpacity(0.9),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppTheme.spacingL),
-
-                // Résumé
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildSummaryCard('Solde', total, AppTheme.primaryColor),
-                    _buildSummaryCard('Dépôts', income, AppTheme.successColor),
-                    _buildSummaryCard('Retraits', expenses, AppTheme.errorColor),
-                  ],
-                ),
-
-                const SizedBox(height: AppTheme.spacingL),
-                // Dernières transactions
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingM),
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(AppTheme.spacingS),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: AppTheme.primaryColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(Icons.history, color: AppTheme.primaryColor),
-                      ),
-                      const SizedBox(width: AppTheme.spacingS),
-                      Text(
-                        'Dernières transactions',
-                        style: AppTheme.titleLarge.copyWith(
+                        child: Icon(
+                          Icons.dashboard_outlined,
                           color: AppTheme.primaryColor,
-                          fontWeight: FontWeight.bold,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "${AppLocalizations.of(context)!.hello} 👋",
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                color: _isDarkMode ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              AppLocalizations.of(context)!.summaryFinance,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: _isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(height: 20),
+
+                // Cartes de résumé simplifiées
+                Row(
+                  children: [
+                    _buildSummaryCard(
+                      AppLocalizations.of(context)!.balance,
+                      total,
+                      AppTheme.primaryColor,
+                    ),
+                    const SizedBox(width: 12),
+                    _buildSummaryCard(
+                      AppLocalizations.of(context)!.deposit,
+                      income,
+                      Colors.green[600]!,
+                    ),
+                    const SizedBox(width: 12),
+                    _buildSummaryCard(
+                      AppLocalizations.of(context)!.withdrawal,
+                      expenses,
+                      Colors.red[600]!,
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 24),
+                
+                // Section transactions
+                _buildSectionTitle(AppLocalizations.of(context)!.lastTransactions),
 
                 if (recentTransactions.isEmpty)
-                  Container(
-                    padding: const EdgeInsets.all(AppTheme.spacingL),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor,
-                      borderRadius: BorderRadius.circular(AppTheme.borderRadiusL),
-                      boxShadow: AppTheme.shadowM,
-                    ),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.receipt_long,
-                            size: 48,
-                            color: AppTheme.textSecondaryColor.withOpacity(0.5),
-                          ),
-                          const SizedBox(height: AppTheme.spacingM),
-                          Text(
-                            'Aucune transaction pour le moment.',
-                            style: AppTheme.bodyLarge.copyWith(
-                              color: AppTheme.textSecondaryColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  _buildEmptyState(
+                    Icons.receipt_outlined,
+                    AppLocalizations.of(context)!.emptyTransaction,
                   )
                 else
                   Column(
@@ -210,33 +173,19 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
                         .map((tx) => _buildTransactionTile(tx))
                         .toList(),
                   ),
-                const SizedBox(height: AppTheme.spacingL),
                 
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingM),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(AppTheme.spacingS),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
-                        ),
-                        child: Icon(Icons.pie_chart, color: AppTheme.primaryColor),
-                      ),
-                      const SizedBox(width: AppTheme.spacingS),
-                      Text(
-                        "Vue graphique",
-                        style: AppTheme.titleLarge.copyWith(
-                          color: AppTheme.primaryColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 100),
-                    ],
-                  ),
-                ),
-                _buildPieChart(income, expenses),
+                const SizedBox(height: 24),
+
+                // Section graphique
+                _buildSectionTitle(AppLocalizations.of(context)!.graphicView),
+                
+                if (income == 0 && expenses == 0)
+                  _buildEmptyState(
+                    Icons.bar_chart_outlined,
+                    AppLocalizations.of(context)!.noDataDescription,
+                  )
+                else
+                  _buildPieChart(income, expenses),
               ],
             ),
           ),
@@ -245,14 +194,63 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
     );
   }
 
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: _isDarkMode ? Colors.white : Colors.black87,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(IconData icon, String message) {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: _isDarkMode ? Colors.grey[900] : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _isDarkMode ? Colors.grey[800]! : Colors.grey[200]!,
+        ),
+      ),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              size: 48,
+              color: _isDarkMode ? Colors.grey[600] : Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: TextStyle(
+                fontSize: 16,
+                color: _isDarkMode ? Colors.grey[400] : Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildPieChart(double income, double expenses) {
     return Container(
-      height: 400,
-      padding: const EdgeInsets.all(AppTheme.spacingL),
+      height: 350,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppTheme.borderRadiusL),
-        boxShadow: AppTheme.shadowM,
+        color: _isDarkMode ? Colors.grey[900] : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _isDarkMode ? Colors.grey[800]! : Colors.grey[200]!,
+        ),
       ),
       child: Column(
         children: [
@@ -262,38 +260,46 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
                 sections: [
                   PieChartSectionData(
                     value: income,
-                    color: AppTheme.successColor,
-                    title: 'Dépôts',
-                    radius: 100,
-                    titleStyle: AppTheme.bodyMedium.copyWith(
+                    color: Colors.green[600],
+                    title: AppLocalizations.of(context)!.deposit,
+                    radius: 80,
+                    titleStyle: const TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
+                      fontSize: 12,
                     ),
                   ),
                   PieChartSectionData(
                     value: expenses,
-                    color: AppTheme.errorColor,
-                    title: 'Retraits',
-                    radius: 100,
-                    titleStyle: AppTheme.bodyMedium.copyWith(
+                    color: Colors.red[600],
+                    title: AppLocalizations.of(context)!.withdrawal,
+                    radius: 80,
+                    titleStyle: const TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
+                      fontSize: 12,
                     ),
                   ),
                 ],
-                centerSpaceRadius: 60,
+                centerSpaceRadius: 50,
                 sectionsSpace: 2,
                 startDegreeOffset: -90,
               ),
             ),
           ),
-          const SizedBox(height: AppTheme.spacingM),
+          const SizedBox(height: 35),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildLegendItem('Dépôts', AppTheme.successColor),
-              const SizedBox(width: AppTheme.spacingL),
-              _buildLegendItem('Retraits', AppTheme.errorColor),
+              _buildLegendItem(
+                AppLocalizations.of(context)!.deposit,
+                Colors.green[600]!,
+              ),
+              const SizedBox(width: 30),
+              _buildLegendItem(
+                AppLocalizations.of(context)!.withdrawal,
+                Colors.red[600]!,
+              ),
             ],
           ),
         ],
@@ -305,18 +311,19 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
     return Row(
       children: [
         Container(
-          width: 16,
-          height: 16,
+          width: 12,
+          height: 12,
           decoration: BoxDecoration(
             color: color,
             shape: BoxShape.circle,
           ),
         ),
-        const SizedBox(width: AppTheme.spacingS),
+        const SizedBox(width: 8),
         Text(
           label,
-          style: AppTheme.bodyMedium.copyWith(
-            color: AppTheme.textPrimaryColor,
+          style: TextStyle(
+            fontSize: 14,
+            color: _isDarkMode ? Colors.grey[300] : Colors.black87,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -327,65 +334,50 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
   Widget _buildSummaryCard(String label, double amount, Color color) {
     return Expanded(
       child: Container(
-        height: 150,
-        margin: const EdgeInsets.symmetric(horizontal: AppTheme.spacingXS),
-        padding: const EdgeInsets.all(AppTheme.spacingM),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              color.withOpacity(0.15),
-              color.withOpacity(0.05),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+          color: _isDarkMode ? Colors.grey[900] : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _isDarkMode ? Colors.grey[900]! : Colors.grey[500]!,
           ),
-          borderRadius: BorderRadius.circular(AppTheme.borderRadiusL),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(AppTheme.spacingS),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
-              ),
-              child: Icon(
-                label == 'Solde' ? Icons.account_balance_wallet :
-                label == 'Dépôts' ? Icons.arrow_downward :
-                Icons.arrow_upward,
-                color: color,
-                size: 20,
-              ),
+            Icon(
+              label == AppLocalizations.of(context)!.balance
+                  ? Icons.account_balance_wallet_outlined
+                  : label == AppLocalizations.of(context)!.deposit
+                      ? Icons.arrow_downward_outlined
+                      : Icons.arrow_upward_outlined,
+              color: color,
+              size: 24,
             ),
-            const SizedBox(height: AppTheme.spacingS),
+            const SizedBox(height: 8),
             Text(
               label,
-              style: AppTheme.bodyMedium.copyWith(
-                color: color,
+              style: TextStyle(
+                fontSize: 12,
+                color: _isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${amount.toStringAsFixed(2)}',
+              style: TextStyle(
+                fontSize: 16,
+                color: _isDarkMode ? Colors.white : Colors.black87,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: AppTheme.spacingXS),
             Text(
-              '${amount.toStringAsFixed(2)} ',
-              style: AppTheme.bodyMedium.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Text(
-              'CFA ',
-              style: AppTheme.bodyMedium.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
+              'CFA',
+              style: TextStyle(
+                fontSize: 10,
+                color: _isDarkMode ? Colors.grey[500] : Colors.grey[500],
               ),
             ),
           ],
@@ -399,66 +391,72 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: AppTheme.spacingXS),
+      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: isDarkMode ? Colors.grey[850] : AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppTheme.borderRadiusL),
-        boxShadow: isDarkMode ? null : AppTheme.shadowM,
+        color: isDarkMode ? Colors.grey[900] : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDarkMode ? Colors.grey[800]! : Colors.grey[200]!,
+        ),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.all(AppTheme.spacingM),
+        contentPadding: const EdgeInsets.all(16),
         leading: Container(
-          padding: const EdgeInsets.all(AppTheme.spacingS),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: isDeposit 
-                ? AppTheme.successColor.withOpacity(isDarkMode ? 0.2 : 0.1) 
-                : AppTheme.errorColor.withOpacity(isDarkMode ? 0.2 : 0.1),
-            borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
+            color: isDeposit
+                ? Colors.green[50]
+                : Colors.red[50],
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
-            isDeposit ? Icons.arrow_downward : Icons.arrow_upward,
-            color: isDeposit ? AppTheme.successColor : AppTheme.errorColor,
+            isDeposit ? Icons.arrow_downward_outlined : Icons.arrow_upward_outlined,
+            color: isDeposit ? Colors.green[600] : Colors.red[600],
+            size: 20,
           ),
         ),
         title: Text(
           tx.description,
-          style: AppTheme.bodyLarge.copyWith(
-            fontWeight: FontWeight.bold,
-            color: isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: isDarkMode ? Colors.white : Colors.black87,
           ),
         ),
         subtitle: Row(
           children: [
             Icon(
-              Icons.calendar_today,
+              Icons.calendar_today_outlined,
               size: 14,
-              color: isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
+              color: isDarkMode ? Colors.grey[400] : Colors.grey[500],
             ),
-            const SizedBox(width: AppTheme.spacingXS),
+            const SizedBox(width: 4),
             Text(
               DateFormat('dd/MM/yyyy').format(tx.date),
-              style: AppTheme.bodyMedium.copyWith(
-                color: isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
+              style: TextStyle(
+                fontSize: 14,
+                color: isDarkMode ? Colors.grey[400] : Colors.grey[500],
               ),
             ),
           ],
         ),
         trailing: Container(
           padding: const EdgeInsets.symmetric(
-            horizontal: AppTheme.spacingM,
-            vertical: AppTheme.spacingS,
+            horizontal: 12,
+            vertical: 6,
           ),
           decoration: BoxDecoration(
-            color: isDeposit 
-                ? AppTheme.successColor.withOpacity(isDarkMode ? 0.2 : 0.1) 
-                : AppTheme.errorColor.withOpacity(isDarkMode ? 0.2 : 0.1),
-            borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
+            color: isDeposit
+                ? Colors.green[50]
+                : Colors.red[50],
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
             '${isDeposit ? '+' : '-'}${tx.montant.toStringAsFixed(2)} CFA',
-            style: AppTheme.bodyMedium.copyWith(
-              color: isDeposit ? AppTheme.successColor : AppTheme.errorColor,
-              fontWeight: FontWeight.bold,
+            style: TextStyle(
+              fontSize: 14,
+              color: isDeposit ? Colors.green[600] : Colors.red[600],
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),

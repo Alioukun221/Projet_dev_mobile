@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/models/budget.dart';
-import 'package:spendwise/models/category.dart';
 import 'package:spendwise/services/data_service.dart';
 import 'package:spendwise/theme/app_theme.dart';
-import 'package:fl_chart/fl_chart.dart';
 
 class PlanningPage extends StatefulWidget {
   const PlanningPage({super.key});
@@ -14,20 +13,26 @@ class PlanningPage extends StatefulWidget {
 }
 
 class _PlanningPageState extends State<PlanningPage> {
-  final List<String> _defaultCategories = [
-    'Alimentation',
-    'Transport',
-    'Logement',
-    'Loisirs',
-    'Santé',
-    'Éducation',
-    'Autres'
-  ];
-
   String? _selectedCategory;
+  bool _isDarkMode = false; // État pour le mode sombre
+
+  @override
+  void initState() {
+    super.initState();
+    // Écouter les changements de thème
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = this.context;
+      setState(() {
+        _isDarkMode = Theme.of(context).brightness == Brightness.dark;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Mettre à jour le mode sombre en fonction du thème actuel
+    _isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return ValueListenableBuilder(
       valueListenable: DataService().getBudgetsListenable(),
       builder: (context, Box<Budget> box, _) {
@@ -39,28 +44,46 @@ class _PlanningPageState extends State<PlanningPage> {
                 Icon(
                   Icons.account_balance_wallet_outlined,
                   size: 64,
-                  color: AppTheme.textSecondaryColor,
+                  color: _isDarkMode
+                      ? Colors.grey[400]
+                      : AppTheme.textSecondaryColor,
                 ),
                 const SizedBox(height: AppTheme.spacingM),
                 Text(
-                  'Aucun budget',
+                  AppLocalizations.of(context)!.noPlanning,
                   style: AppTheme.titleMedium.copyWith(
-                    color: AppTheme.textSecondaryColor,
+                    color: _isDarkMode
+                        ? Colors.grey[400]
+                        : AppTheme.textSecondaryColor,
                   ),
                 ),
                 const SizedBox(height: AppTheme.spacingS),
                 Text(
-                  'Créez votre premier budget',
+                  AppLocalizations.of(context)!.createFirstPlanning,
                   style: AppTheme.bodyMedium.copyWith(
-                    color: AppTheme.textSecondaryColor,
+                    color: _isDarkMode
+                        ? Colors.grey[400]
+                        : AppTheme.textSecondaryColor,
                   ),
                 ),
                 const SizedBox(height: AppTheme.spacingM),
                 ElevatedButton.icon(
-                  onPressed: () => _showAddBudgetDialog(context),
-                  icon: const Icon(Icons.add, color: Colors.blue),
-                  label: const Text('Créer un budget'),
-                ),
+                    onPressed: () => _showAddBudgetDialog(context),
+                    icon: Icon(Icons.add, color: Colors.white),
+                    label: Text(
+                      AppLocalizations.of(context)!.createPlanning,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: AppTheme.fontSizeM,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(AppTheme.borderRadiusL),
+                      ),
+                    )),
               ],
             ),
           );
@@ -71,17 +94,27 @@ class _PlanningPageState extends State<PlanningPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildOverviewChart(box),
-              const SizedBox(height: AppTheme.spacingL),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Budgets',
-                    style: AppTheme.titleLarge,
+                    AppLocalizations.of(context)!.addPlanning,
+                    style: AppTheme.titleLarge.copyWith(
+                        color: _isDarkMode
+                            ? Colors.white
+                            : const Color.fromARGB(255, 48, 43, 43),
+                        fontWeight: FontWeight.w400),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.add),
+                    style: ButtonStyle(
+                      backgroundColor:
+                          WidgetStateProperty.all(AppTheme.primaryColor),
+                    ),
+                    color: AppTheme.primaryColor,
+                    icon: Icon(
+                      Icons.add,
+                      color: Colors.white,
+                    ),
                     onPressed: () => _showAddBudgetDialog(context),
                   ),
                 ],
@@ -107,9 +140,12 @@ class _PlanningPageState extends State<PlanningPage> {
           margin: const EdgeInsets.only(bottom: AppTheme.spacingM),
           padding: const EdgeInsets.all(AppTheme.spacingM),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor,
+            color: _isDarkMode ? Colors.grey[850] : AppTheme.surfaceColor,
             borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
-            boxShadow: AppTheme.shadowS,
+            boxShadow: _isDarkMode ? AppTheme.shadowM : AppTheme.shadowS,
+            border: _isDarkMode
+                ? Border.all(color: const Color.fromARGB(255, 177, 168, 168))
+                : Border.all(color: const Color.fromARGB(255, 201, 196, 196)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -119,10 +155,18 @@ class _PlanningPageState extends State<PlanningPage> {
                 children: [
                   Text(
                     budget.category,
-                    style: AppTheme.titleMedium,
+                    style: AppTheme.titleMedium.copyWith(
+                      color: _isDarkMode
+                          ? Colors.white
+                          : AppTheme.textPrimaryColor,
+                    ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.delete_outline),
+                    icon: Icon(
+                      Icons.delete_outline,
+                      color:
+                          _isDarkMode ? Colors.grey[400] : AppTheme.errorColor,
+                    ),
                     onPressed: () => _deleteBudget(budget),
                   ),
                 ],
@@ -130,9 +174,13 @@ class _PlanningPageState extends State<PlanningPage> {
               const SizedBox(height: AppTheme.spacingS),
               LinearProgressIndicator(
                 value: budget.progress / 100,
-                backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                backgroundColor:
+                    (_isDarkMode ? Colors.grey[800]! : AppTheme.primaryColor)
+                        .withOpacity(0.1),
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  budget.isOverBudget ? AppTheme.errorColor : AppTheme.primaryColor,
+                  budget.isOverBudget
+                      ? AppTheme.errorColor
+                      : AppTheme.primaryColor,
                 ),
               ),
               const SizedBox(height: AppTheme.spacingS),
@@ -140,13 +188,21 @@ class _PlanningPageState extends State<PlanningPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Dépensé: ${budget.spent.toStringAsFixed(2)} CFA',
-                    style: AppTheme.bodyMedium,
+                    '${AppLocalizations.of(context)!.spent}: ${budget.spent.toStringAsFixed(2)} CFA',
+                    style: AppTheme.bodyMedium.copyWith(
+                      color: _isDarkMode
+                          ? Colors.grey[400]
+                          : AppTheme.textSecondaryColor,
+                    ),
                   ),
                   Text(
-                    'Restant: ${budget.remaining.toStringAsFixed(2)} CFA',
+                    '${AppLocalizations.of(context)!.remaining}: ${budget.remaining.toStringAsFixed(2)} CFA',
                     style: AppTheme.bodyMedium.copyWith(
-                      color: budget.isOverBudget ? AppTheme.errorColor : AppTheme.successColor,
+                      color: budget.isOverBudget
+                          ? AppTheme.errorColor
+                          : (_isDarkMode
+                              ? Colors.grey[400]
+                              : AppTheme.successColor),
                     ),
                   ),
                 ],
@@ -158,45 +214,8 @@ class _PlanningPageState extends State<PlanningPage> {
     );
   }
 
-  Widget _buildOverviewChart(Box<Budget> box) {
-    final budgets = DataService().getBudgets();
-    return SizedBox(
-      height: 200,
-      child: PieChart(
-        PieChartData(
-          sections: budgets.map((budget) {
-            return PieChartSectionData(
-              value: budget.amount,
-              title: '${budget.category}\n${budget.progress.toStringAsFixed(1)}%',
-              color: _getCategoryColor(budget.category),
-              radius: 50,
-              titleStyle: AppTheme.bodyMedium.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  Color _getCategoryColor(String category) {
-    final colors = {
-      'Alimentation': Colors.green,
-      'Transport': Colors.blue,
-      'Logement': Colors.purple,
-      'Loisirs': Colors.orange,
-      'Santé': Colors.red,
-      'Éducation': Colors.teal,
-      'Autres': Colors.grey,
-    };
-    return colors[category] ?? AppTheme.primaryColor;
-  }
-
   void _showAddBudgetDialog(BuildContext context) {
     final formKey = GlobalKey<FormState>();
-    String selectedCategory = _defaultCategories.first;
     final amountController = TextEditingController();
     final descriptionController = TextEditingController();
     DateTime startDate = DateTime.now();
@@ -205,7 +224,13 @@ class _PlanningPageState extends State<PlanningPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Nouveau budget'),
+        backgroundColor: _isDarkMode ? Colors.grey[850] : null,
+        title: Text(
+          AppLocalizations.of(context)!.newPlanning,
+          style: TextStyle(
+            color: _isDarkMode ? Colors.white : null,
+          ),
+        ),
         content: Form(
           key: formKey,
           child: SingleChildScrollView(
@@ -225,34 +250,47 @@ class _PlanningPageState extends State<PlanningPage> {
                     if (categories.isEmpty) {
                       return Column(
                         children: [
-                          const Text(
-                            'Aucune catégorie disponible',
-                            style: TextStyle(color: Colors.red),
+                          Text(
+                            AppLocalizations.of(context)!.noCategory,
+                            style: TextStyle(
+                              color: _isDarkMode ? Colors.red[300] : Colors.red,
+                            ),
                           ),
                           const SizedBox(height: AppTheme.spacingM),
                           ElevatedButton(
                             onPressed: () {
                               Navigator.pushNamed(context, '/categories');
                             },
-                            child: const Text('Créer une catégorie'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  _isDarkMode ? Colors.grey[800] : null,
+                            ),
+                            child:
+                                Text(AppLocalizations.of(context)!.addCategory),
                           ),
                         ],
                       );
                     }
 
-                    // Réinitialiser la catégorie sélectionnée si elle n'existe plus
-                    if (_selectedCategory != null && !categories.contains(_selectedCategory)) {
+                    if (_selectedCategory != null &&
+                        !categories.contains(_selectedCategory)) {
                       _selectedCategory = categories.first;
-                    } else if (_selectedCategory == null && categories.isNotEmpty) {
+                    } else if (_selectedCategory == null &&
+                        categories.isNotEmpty) {
                       _selectedCategory = categories.first;
                     }
-                    
+
                     return DropdownButtonFormField<String>(
                       value: _selectedCategory,
                       items: categories.map((category) {
                         return DropdownMenuItem(
                           value: category,
-                          child: Text(category),
+                          child: Text(
+                            category,
+                            style: TextStyle(
+                              color: _isDarkMode ? Colors.white : null,
+                            ),
+                          ),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -262,9 +300,26 @@ class _PlanningPageState extends State<PlanningPage> {
                           });
                         }
                       },
-                      decoration: const InputDecoration(
-                        labelText: 'Catégorie',
-                        border: OutlineInputBorder(),
+                      dropdownColor: _isDarkMode ? Colors.grey[850] : null,
+                      decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.category,
+                        labelStyle: TextStyle(
+                          color: _isDarkMode ? Colors.grey[400] : null,
+                        ),
+                        border: const OutlineInputBorder(),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: _isDarkMode
+                                ? Colors.grey[700]!
+                                : Colors.grey[400]!,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color:
+                                _isDarkMode ? Colors.blue[300]! : Colors.blue,
+                          ),
+                        ),
                       ),
                     );
                   },
@@ -273,16 +328,37 @@ class _PlanningPageState extends State<PlanningPage> {
                 TextFormField(
                   controller: amountController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Montant',
+                  style: TextStyle(
+                    color: _isDarkMode ? Colors.white : null,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.amount,
+                    labelStyle: TextStyle(
+                      color: _isDarkMode ? Colors.grey[400] : null,
+                    ),
                     prefixText: 'CFA ',
+                    prefixStyle: TextStyle(
+                      color: _isDarkMode ? Colors.grey[400] : null,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color:
+                            _isDarkMode ? Colors.grey[700]! : Colors.grey[400]!,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: _isDarkMode ? Colors.blue[300]! : Colors.blue,
+                      ),
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer un montant';
+                      return AppLocalizations.of(context)!.pleaseEnterAmount;
                     }
                     if (double.tryParse(value) == null) {
-                      return 'Veuillez entrer un nombre valide';
+                      return AppLocalizations.of(context)!
+                          .pleaseEnterAmountInvalid;
                     }
                     return null;
                   },
@@ -290,29 +366,73 @@ class _PlanningPageState extends State<PlanningPage> {
                 const SizedBox(height: AppTheme.spacingM),
                 TextFormField(
                   controller: descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description',
+                  style: TextStyle(
+                    color: _isDarkMode ? Colors.white : null,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.description,
+                    labelStyle: TextStyle(
+                      color: _isDarkMode ? Colors.grey[400] : null,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color:
+                            _isDarkMode ? Colors.grey[700]! : Colors.grey[400]!,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: _isDarkMode ? Colors.blue[300]! : Colors.blue,
+                      ),
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer une description';
+                      return AppLocalizations.of(context)!
+                          .pleaseEnterDescription;
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: AppTheme.spacingM),
                 ListTile(
-                  title: const Text('Date de début'),
+                  title: Text(
+                    AppLocalizations.of(context)!.startDate,
+                    style: TextStyle(
+                      color: _isDarkMode ? Colors.white : null,
+                    ),
+                  ),
                   subtitle: Text(
                     '${startDate.day}/${startDate.month}/${startDate.year}',
+                    style: TextStyle(
+                      color: _isDarkMode ? Colors.grey[400] : null,
+                    ),
                   ),
-                  trailing: const Icon(Icons.calendar_today),
+                  trailing: Icon(
+                    Icons.calendar_today,
+                    color: _isDarkMode ? Colors.grey[400] : null,
+                  ),
                   onTap: () async {
                     final date = await showDatePicker(
                       context: context,
                       initialDate: startDate,
                       firstDate: DateTime.now(),
                       lastDate: DateTime.now().add(const Duration(days: 365)),
+                      builder: (context, child) {
+                        return Theme(
+                          data: Theme.of(context).copyWith(
+                            colorScheme: _isDarkMode
+                                ? ColorScheme.dark(
+                                    primary: Colors.blue[300]!,
+                                    onPrimary: Colors.white,
+                                    surface: Colors.grey[850]!,
+                                    onSurface: Colors.white,
+                                  )
+                                : null,
+                          ),
+                          child: child!,
+                        );
+                      },
                     );
                     if (date != null) {
                       startDate = date;
@@ -320,17 +440,43 @@ class _PlanningPageState extends State<PlanningPage> {
                   },
                 ),
                 ListTile(
-                  title: const Text('Date de fin'),
+                  title: Text(
+                    AppLocalizations.of(context)!.endDate,
+                    style: TextStyle(
+                      color: _isDarkMode ? Colors.white : null,
+                    ),
+                  ),
                   subtitle: Text(
                     '${endDate.day}/${endDate.month}/${endDate.year}',
+                    style: TextStyle(
+                      color: _isDarkMode ? Colors.grey[400] : null,
+                    ),
                   ),
-                  trailing: const Icon(Icons.calendar_today),
+                  trailing: Icon(
+                    Icons.calendar_today,
+                    color: _isDarkMode ? Colors.grey[400] : null,
+                  ),
                   onTap: () async {
                     final date = await showDatePicker(
                       context: context,
                       initialDate: endDate,
                       firstDate: startDate,
                       lastDate: DateTime.now().add(const Duration(days: 365)),
+                      builder: (context, child) {
+                        return Theme(
+                          data: Theme.of(context).copyWith(
+                            colorScheme: _isDarkMode
+                                ? ColorScheme.dark(
+                                    primary: Colors.blue[300]!,
+                                    onPrimary: Colors.white,
+                                    surface: Colors.grey[850]!,
+                                    onSurface: Colors.white,
+                                  )
+                                : null,
+                          ),
+                          child: child!,
+                        );
+                      },
                     );
                     if (date != null) {
                       endDate = date;
@@ -344,7 +490,12 @@ class _PlanningPageState extends State<PlanningPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
+            child: Text(
+              AppLocalizations.of(context)!.cancel,
+              style: TextStyle(
+                color: _isDarkMode ? Colors.grey[400] : null,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -360,7 +511,10 @@ class _PlanningPageState extends State<PlanningPage> {
                 Navigator.pop(context);
               }
             },
-            child: const Text('Créer'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _isDarkMode ? Colors.grey[800] : null,
+            ),
+            child: Text(AppLocalizations.of(context)!.save),
           ),
         ],
       ),
@@ -371,24 +525,43 @@ class _PlanningPageState extends State<PlanningPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirmer la suppression'),
+        backgroundColor: _isDarkMode ? Colors.grey[850] : null,
+        title: Text(
+          AppLocalizations.of(context)!.deleteConfirmationTitle,
+          style: TextStyle(
+            color: _isDarkMode ? Colors.white : null,
+          ),
+        ),
         content: Text(
-          'Voulez-vous vraiment supprimer le budget "${budget.category}" ?',
+          '${AppLocalizations.of(context)!.deleteConfirmationContent}  "${budget.category}" ?',
+          style: TextStyle(
+            color: _isDarkMode ? Colors.grey[400] : null,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
+            child: Text(
+              AppLocalizations.of(context)!.cancel,
+              style: TextStyle(
+                color: _isDarkMode ? Colors.grey[400] : null,
+              ),
+            ),
           ),
           TextButton(
             onPressed: () {
               DataService().deleteBudget(budget);
               Navigator.pop(context);
             },
-            child: const Text('Supprimer'),
+            child: Text(
+              AppLocalizations.of(context)!.delete,
+              style: TextStyle(
+                color: _isDarkMode ? Colors.red[300] : Colors.red,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
-} 
+}
