@@ -2,6 +2,8 @@
 .env
 .env.*
 
+init.md
+
 # Miscellaneous
 *.class
 *.log
