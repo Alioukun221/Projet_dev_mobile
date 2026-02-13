@@ -274,4 +274,157 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get restore => 'Restaurar';
+
+  @override
+  String get goodMorning => 'Buenos dias';
+
+  @override
+  String get goodAfternoon => 'Buenas tardes';
+
+  @override
+  String get goodEvening => 'Buenas noches';
+
+  @override
+  String get lightMode => 'Modo claro';
+
+  @override
+  String get darkMode => 'Modo oscuro';
+
+  @override
+  String get language => 'Idioma';
+
+  @override
+  String get logout => 'Cerrar sesión';
+
+  @override
+  String get authWelcomeTitle => 'Presupuesto\ninteligente\ny sencillo';
+
+  @override
+  String get authWelcomeSubtitle => 'Controla tus gastos y mantente dentro de tu\npresupuesto con actualizaciones en tiempo real\ny alertas.';
+
+  @override
+  String get authSignIn => 'Iniciar sesión';
+
+  @override
+  String get authSignUp => 'Registrarse';
+
+  @override
+  String get authNoAccount => '¿No tienes cuenta? ';
+
+  @override
+  String get authHaveAccount => '¿Ya tienes cuenta? ';
+
+  @override
+  String get authWelcomeBack => 'Bienvenido\nde nuevo';
+
+  @override
+  String get authSignInSubtitle => 'Inicia sesión para seguir gestionando tu presupuesto';
+
+  @override
+  String get authEmailHint => 'Correo electrónico';
+
+  @override
+  String get authPasswordHint => 'Contraseña';
+
+  @override
+  String get authForgotPassword => '¿Olvidaste tu contraseña?';
+
+  @override
+  String get authOrContinueWith => 'o continuar con';
+
+  @override
+  String get authOrSignUpWith => 'o registrarse con';
+
+  @override
+  String get authEmailRequired => 'Por favor, ingresa tu correo';
+
+  @override
+  String get authEmailInvalid => 'Por favor, ingresa un correo válido';
+
+  @override
+  String get authPasswordRequired => 'Por favor, ingresa tu contraseña';
+
+  @override
+  String get authPasswordTooShort => 'La contraseña debe tener al menos 6 caracteres';
+
+  @override
+  String get authCreateAccount => 'Crear\ncuenta';
+
+  @override
+  String get authCreateAccountSubtitle => 'Comienza tu camino hacia un presupuesto inteligente';
+
+  @override
+  String get authFullNameHint => 'Nombre completo';
+
+  @override
+  String get authConfirmPasswordHint => 'Confirmar contraseña';
+
+  @override
+  String get authNameRequired => 'Por favor, ingresa tu nombre';
+
+  @override
+  String get authPasswordEnter => 'Por favor, ingresa una contraseña';
+
+  @override
+  String get authPasswordMismatch => 'Las contraseñas no coinciden';
+
+  @override
+  String get authConfirmPasswordRequired => 'Por favor, confirma tu contraseña';
+
+  @override
+  String get authAgreeTerms => 'Acepto los ';
+
+  @override
+  String get authTermsConditions => 'Términos y condiciones';
+
+  @override
+  String get authAgreeTermsRequired => 'Por favor, acepta los términos y condiciones';
+
+  @override
+  String get authCreateAccountBtn => 'Crear cuenta';
+
+  @override
+  String get authAccountCreated => '¡Cuenta creada! Revisa tu correo para confirmar.';
+
+  @override
+  String get authUnexpectedError => 'Ocurrió un error inesperado';
+
+  @override
+  String get authResetPassword => 'Restablecer\ncontraseña';
+
+  @override
+  String get authResetSubtitle => 'Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.';
+
+  @override
+  String get authResetEmailSentSubtitle => 'Enviamos un enlace de restablecimiento a tu correo. Revisa tu bandeja de entrada.';
+
+  @override
+  String get authSendResetLink => 'Enviar enlace';
+
+  @override
+  String get authEmailSent => '¡Correo enviado!';
+
+  @override
+  String get authBackToSignIn => 'Volver a iniciar sesión';
+
+  @override
+  String get profile => 'Perfil';
+
+  @override
+  String get profileTitle => 'Mi perfil';
+
+  @override
+  String get editAvatar => 'Editar avatar';
+
+  @override
+  String get displayName => 'Nombre para mostrar';
+
+  @override
+  String get email => 'Correo electrónico';
+
+  @override
+  String get chooseAvatar => 'Elegir un avatar';
+
+  @override
+  String get profileUpdated => 'Perfil actualizado';
 }

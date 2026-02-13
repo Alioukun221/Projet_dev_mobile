@@ -1,8 +1,9 @@
 // ignore_for_file: use_key_in_widget_constructors, use_build_context_synchronously, prefer_const_constructors_in_immutables
 
 import 'package:flutter/material.dart';
+import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/models/transaction.dart';
-import 'package:spendwise/services/data_service.dart';
+import 'package:spendwise/services/supabase_data_service.dart';
 import 'package:spendwise/theme/app_theme.dart';
 
 class EditTransactionPage extends StatefulWidget {
@@ -29,15 +30,31 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
 
   bool get _isDarkMode => widget.isDarkMode;
 
+  // -- Design system colors --
+  Color get _bgColor =>
+      _isDarkMode ? AppTheme.darkBgColor : const Color(0xFFF7F8FC);
+  Color get _cardColor =>
+      _isDarkMode ? AppTheme.darkCardColor : Colors.white;
+  Color get _textPrimary =>
+      _isDarkMode ? Colors.white : const Color(0xFF1A1D29);
+  Color get _textSecondary =>
+      _isDarkMode ? AppTheme.darkTextSecondaryColor : const Color(0xFF6B7280);
+  Color get _borderColor => _isDarkMode
+      ? AppTheme.darkBorderColor
+      : Colors.black.withOpacity(0.04);
+  static const Color _primaryBlue = Color(0xFF005EFF);
+  static const Color _greenColor = Color(0xFF22C55E);
+  static const Color _redColor = Color(0xFFEF4444);
+
   @override
   void initState() {
     super.initState();
     _descriptionController =
         TextEditingController(text: widget.transaction.description);
     _amountController =
-        TextEditingController(text: widget.transaction.montant.toString());
+        TextEditingController(text: widget.transaction.amount.toString());
     _selectedType = widget.transaction.type;
-    _selectedCategory = widget.transaction.category;
+    _selectedCategory = widget.transaction.categoryName ?? '';
     _selectedDate = widget.transaction.date;
   }
 
@@ -48,51 +65,24 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
     super.dispose();
   }
 
-  void _updateBudget(double oldAmount, double newAmount) {
-    // Annuler l'ancienne dépense
-    if (widget.transaction.type == 'retrait') {
-      final budgets = DataService().getBudgets().where((budget) {
-        return budget.category == widget.transaction.category &&
-            widget.transaction.date.isAfter(budget.startDate) &&
-            widget.transaction.date.isBefore(budget.endDate);
-      }).toList();
-
-      if (budgets.isNotEmpty) {
-        final budget = budgets.first;
-        budget.spent -= oldAmount;
-        DataService().updateBudget(budget);
-      }
-    }
-
-    // Appliquer la nouvelle dépense
-    if (_selectedType == 'retrait') {
-      final budgets = DataService().getBudgets().where((budget) {
-        return budget.category == _selectedCategory &&
-            _selectedDate.isAfter(budget.startDate) &&
-            _selectedDate.isBefore(budget.endDate);
-      }).toList();
-
-      if (budgets.isNotEmpty) {
-        final budget = budgets.first;
-        budget.spent += newAmount;
-        DataService().updateBudget(budget);
-      }
-    }
-  }
-
-  void _updateTransaction() {
+  void _updateTransaction() async {
     if (_formKey.currentState!.validate()) {
-      final oldAmount = widget.transaction.montant;
       final newAmount = double.parse(_amountController.text);
+      final categoryId =
+          await SupabaseDataService().getCategoryIdByName(_selectedCategory);
 
-      widget.transaction.type = _selectedType;
-      widget.transaction.montant = newAmount;
-      widget.transaction.description = _descriptionController.text;
-      widget.transaction.date = _selectedDate;
-      widget.transaction.category = _selectedCategory;
-      DataService().updateTransaction(widget.transaction);
+      final updated = Transaction(
+        id: widget.transaction.id,
+        userId: widget.transaction.userId,
+        type: _selectedType,
+        categoryId: categoryId,
+        amount: newAmount,
+        description: _descriptionController.text,
+        date: _selectedDate,
+      );
 
-      _updateBudget(oldAmount, newAmount);
+      await SupabaseDataService().updateTransaction(updated);
+      if (!mounted) return;
       Navigator.pop(context);
     }
   }
@@ -107,10 +97,13 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: ColorScheme.light(
-              primary: AppTheme.primaryColor,
+              primary: _primaryBlue,
               onPrimary: Colors.white,
-              surface: AppTheme.surfaceColor,
-              onSurface: AppTheme.textPrimaryColor,
+              surface: _isDarkMode
+                  ? AppTheme.darkCardColor
+                  : AppTheme.surfaceColor,
+              onSurface:
+                  _isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
             ),
           ),
           child: child!,
@@ -124,170 +117,420 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
     }
   }
 
+  void _showDeleteDialog() {
+    final loc = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: _cardColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: _redColor.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: _redColor,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                loc.deleteConfirmationTitle,
+                style: TextStyle(
+                  color: _textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Voulez-vous vraiment supprimer cette transaction ?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _textSecondary,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 48,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: _textPrimary,
+                          side: BorderSide(color: _borderColor, width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: Text(
+                          loc.cancel,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SizedBox(
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          await SupabaseDataService()
+                              .deleteTransaction(widget.transaction);
+                          if (!context.mounted) return;
+                          Navigator.pop(context); // Close dialog
+                          Navigator.pop(
+                              context); // Return to previous screen
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _redColor,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: Text(
+                          loc.delete,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _buildInputDecoration({
+    required String label,
+    String? prefixText,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: TextStyle(
+        color: _textSecondary,
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+      ),
+      prefixText: prefixText,
+      prefixStyle: TextStyle(
+        color: _textSecondary,
+        fontSize: 15,
+        fontWeight: FontWeight.w500,
+      ),
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: _cardColor,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: _borderColor),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: _borderColor),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: _primaryBlue, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: _redColor, width: 1.5),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: _redColor, width: 1.5),
+      ),
+    );
+  }
+
+  Widget _buildTypeToggle() {
+    final loc = AppLocalizations.of(context)!;
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: () => setState(() => _selectedType = 'deposit'),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: _selectedType == 'deposit'
+                    ? _greenColor.withOpacity(0.12)
+                    : _cardColor,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _selectedType == 'deposit'
+                      ? _greenColor.withOpacity(0.4)
+                      : _borderColor,
+                  width: _selectedType == 'deposit' ? 1.5 : 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: _selectedType == 'deposit'
+                          ? _greenColor.withOpacity(0.15)
+                          : _textSecondary.withOpacity(0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.arrow_downward_rounded,
+                      color: _selectedType == 'deposit'
+                          ? _greenColor
+                          : _textSecondary,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    loc.deposit,
+                    style: TextStyle(
+                      color: _selectedType == 'deposit'
+                          ? _greenColor
+                          : _textSecondary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: GestureDetector(
+            onTap: () => setState(() => _selectedType = 'withdrawal'),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: _selectedType == 'withdrawal'
+                    ? _redColor.withOpacity(0.12)
+                    : _cardColor,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _selectedType == 'withdrawal'
+                      ? _redColor.withOpacity(0.4)
+                      : _borderColor,
+                  width: _selectedType == 'withdrawal' ? 1.5 : 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: _selectedType == 'withdrawal'
+                          ? _redColor.withOpacity(0.15)
+                          : _textSecondary.withOpacity(0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.arrow_upward_rounded,
+                      color: _selectedType == 'withdrawal'
+                          ? _redColor
+                          : _textSecondary,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    loc.withdrawal,
+                    style: TextStyle(
+                      color: _selectedType == 'withdrawal'
+                          ? _redColor
+                          : _textSecondary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
     return Scaffold(
-      backgroundColor:
-          _isDarkMode ? Colors.grey[800] : AppTheme.backgroundColor,
+      backgroundColor: _bgColor,
       appBar: AppBar(
-        backgroundColor: _isDarkMode ? Colors.grey[850] : AppTheme.surfaceColor,
-        foregroundColor: _isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
-        elevation: 2,
-        title: Text('Modifier la transaction',
-            style: TextStyle(
-                color: _isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
-                fontWeight: FontWeight.w400)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        automaticallyImplyLeading: false,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: Center(
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: _cardColor,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: _borderColor),
+                ),
+                child: Icon(
+                  Icons.arrow_back_rounded,
+                  color: _textPrimary,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+        ),
+        title: Text(
+          'Modifier la transaction',
+          style: TextStyle(
+            color: _textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text('Confirmer la suppression',
-                      style: TextStyle(
-                        color: _isDarkMode
-                            ? Colors.white
-                            : AppTheme.textPrimaryColor,
-                      )),
-                  content:
-                      Text('Voulez-vous vraiment supprimer cette transaction ?',
-                          style: TextStyle(
-                            color: _isDarkMode
-                                ? Colors.white
-                                : AppTheme.textPrimaryColor,
-                          )),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text('Annuler',
-                          style: TextStyle(
-                            color: _isDarkMode
-                                ? Colors.white
-                                : AppTheme.textPrimaryColor,
-                          )),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Center(
+              child: GestureDetector(
+                onTap: _showDeleteDialog,
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: _redColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: _redColor.withOpacity(0.15),
                     ),
-                    TextButton(
-                      onPressed: () {
-                        // Annuler la dépense dans le budget si nécessaire
-                        if (widget.transaction.type == 'retrait') {
-                          final budgets =
-                              DataService().getBudgets().where((budget) {
-                            return budget.category ==
-                                    widget.transaction.category &&
-                                widget.transaction.date
-                                    .isAfter(budget.startDate) &&
-                                widget.transaction.date
-                                    .isBefore(budget.endDate);
-                          }).toList();
-
-                          if (budgets.isNotEmpty) {
-                            final budget = budgets.first;
-                            budget.spent -= widget.transaction.montant;
-                            DataService().updateBudget(budget);
-                          }
-                        }
-
-                        DataService().deleteTransaction(widget.transaction);
-                        Navigator.pop(context); // Close dialog
-                        Navigator.pop(context); // Return to previous screen
-                      },
-                      child: const Text('Supprimer'),
-                    ),
-                  ],
+                  ),
+                  child: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: _redColor,
+                    size: 20,
+                  ),
                 ),
-              );
-            },
+              ),
+            ),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppTheme.spacingM),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Type de transaction
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment<String>(
-                    value: 'dépôt',
-                    label: Text('Dépôt'),
-                    icon: Icon(Icons.arrow_downward),
-                  ),
-                  ButtonSegment<String>(
-                    value: 'retrait',
-                    label: Text('Retrait'),
-                    icon: Icon(Icons.arrow_upward),
-                  ),
-                ],
-                selected: {_selectedType},
-                onSelectionChanged: (Set<String> newSelection) {
-                  setState(() {
-                    _selectedType = newSelection.first;
-                  });
-                },
-                style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.resolveWith<Color>(
-                    (states) {
-                      if (states.contains(MaterialState.selected)) {
-                        return _isDarkMode
-                            ? AppTheme.primaryColor
-                            : AppTheme.primaryColor.withOpacity(0.15);
-                      }
-                      return _isDarkMode ? Colors.grey[700]! : Colors.white;
-                    },
-                  ),
-                  foregroundColor: MaterialStateProperty.resolveWith<Color>(
-                    (states) {
-                      if (states.contains(MaterialState.selected)) {
-                        return Colors.white;
-                      }
-                      return _isDarkMode
-                          ? Colors.white
-                          : const Color.fromARGB(255, 64, 57, 57);
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppTheme.spacingM),
+              // -- Transaction type toggle cards --
+              _buildTypeToggle(),
+              const SizedBox(height: 20),
 
-              // Catégorie
+              // -- Category dropdown --
               StreamBuilder<List<String>>(
-                stream: Stream.fromFuture(Future.value(
-                  DataService().getAllCategories(),
-                )),
+                stream: Stream.fromFuture(
+                  SupabaseDataService().getAllCategoryNames(),
+                ),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
-                    return const CircularProgressIndicator();
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: CircularProgressIndicator(
+                          color: _primaryBlue,
+                          strokeWidth: 2.5,
+                        ),
+                      ),
+                    );
                   }
 
                   final categories = snapshot.data!;
                   if (categories.isEmpty) {
-                    return Column(
-                      children: [
-                        Text(
-                          'Aucune catégorie disponible',
-                          style: TextStyle(
-                            color: _isDarkMode ? Colors.red[200] : Colors.red,
+                    return Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: _cardColor,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: _borderColor),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.category_outlined,
+                            color: _textSecondary,
+                            size: 32,
                           ),
-                        ),
-                        const SizedBox(height: AppTheme.spacingM),
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/categories');
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _isDarkMode
-                                ? AppTheme.primaryColor
-                                : AppTheme.primaryColor,
-                            foregroundColor: Colors.white,
+                          const SizedBox(height: 12),
+                          Text(
+                            loc.noCategory,
+                            style: TextStyle(
+                              color: _redColor,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                          child: const Text('Créer une catégorie'),
-                        ),
-                      ],
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: 44,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/categories');
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _primaryBlue,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: Text(loc.createCategory),
+                            ),
+                          ),
+                        ],
+                      ),
                     );
                   }
 
@@ -300,9 +543,8 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                         child: Text(
                           category,
                           style: TextStyle(
-                            color: _isDarkMode
-                                ? Colors.white
-                                : const Color.fromARGB(255, 109, 98, 98),
+                            color: _textPrimary,
+                            fontSize: 15,
                           ),
                         ),
                       );
@@ -314,140 +556,171 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                         });
                       }
                     },
-                    decoration: InputDecoration(
-                      labelText: 'Catégorie',
-                      labelStyle: TextStyle(
-                        color: _isDarkMode
-                            ? Colors.white70
-                            : AppTheme.textSecondaryColor,
-                      ),
-                      filled: true,
-                      fillColor: _isDarkMode ? Colors.grey[700] : Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppTheme.borderRadiusM),
-                        borderSide: BorderSide(
-                          color: _isDarkMode
-                              ? Colors.white24
-                              : AppTheme.primaryColor,
-                        ),
-                      ),
+                    decoration: _buildInputDecoration(
+                      label: loc.category,
                     ),
-                    dropdownColor:
-                        _isDarkMode ? Colors.grey[900] : Colors.white,
+                    dropdownColor: _cardColor,
+                    icon: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: _textSecondary,
+                    ),
                   );
                 },
               ),
-              const SizedBox(height: AppTheme.spacingM),
+              const SizedBox(height: 16),
 
-              // Montant
+              // -- Amount --
               TextFormField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
                 style: TextStyle(
-                  color: _isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
+                  color: _textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
                 ),
-                decoration: InputDecoration(
-                  labelText: 'Montant',
-                  prefixStyle: TextStyle(
-                    color: _isDarkMode
-                        ? Colors.white70
-                        : AppTheme.textSecondaryColor,
-                  ),
-                  labelStyle: TextStyle(
-                    color: _isDarkMode
-                        ? Colors.white70
-                        : AppTheme.textSecondaryColor,
-                  ),
+                decoration: _buildInputDecoration(
+                  label: loc.amount,
                   prefixText: 'CFA ',
-                  filled: true,
-                  fillColor: _isDarkMode ? Colors.grey[700] : Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
-                    borderSide: BorderSide(
-                      color:
-                          _isDarkMode ? Colors.white24 : AppTheme.primaryColor,
-                    ),
-                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Veuillez entrer un montant';
+                    return loc.pleaseEnterAmount;
                   }
                   if (double.tryParse(value) == null) {
-                    return 'Veuillez entrer un nombre valide';
+                    return loc.pleaseEnterAmountInvalid;
                   }
                   return null;
                 },
               ),
-              const SizedBox(height: AppTheme.spacingM),
+              const SizedBox(height: 16),
 
-              // Description
+              // -- Description --
               TextFormField(
                 controller: _descriptionController,
                 style: TextStyle(
-                  color: _isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
+                  color: _textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
                 ),
-                decoration: InputDecoration(
-                  labelText: 'Description',
-                  labelStyle: TextStyle(
-                    color: _isDarkMode
-                        ? Colors.white70
-                        : AppTheme.textSecondaryColor,
-                  ),
-                  filled: true,
-                  fillColor: _isDarkMode ? Colors.grey[700] : Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
-                    borderSide: BorderSide(
-                      color:
-                          _isDarkMode ? Colors.white24 : AppTheme.primaryColor,
-                    ),
-                  ),
+                decoration: _buildInputDecoration(
+                  label: loc.description,
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Veuillez entrer une description';
+                    return loc.pleaseEnterDescription;
                   }
                   return null;
                 },
               ),
-              const SizedBox(height: AppTheme.spacingM),
+              const SizedBox(height: 16),
 
-              // Date
-              ListTile(
-                tileColor: _isDarkMode ? Colors.grey[700] : Colors.white,
-                title: Text(
-                  'Date',
-                  style: TextStyle(
-                    color:
-                        _isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
-                  ),
-                ),
-                subtitle: Text(
-                  '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                  style: TextStyle(
-                    color: _isDarkMode
-                        ? Colors.white70
-                        : AppTheme.textSecondaryColor,
-                  ),
-                ),
-                trailing: Icon(
-                  Icons.calendar_today,
-                  color: _isDarkMode ? Colors.white : AppTheme.primaryColor,
-                ),
+              // -- Date picker --
+              GestureDetector(
                 onTap: () => _selectDate(context),
-              ),
-              const SizedBox(height: AppTheme.spacingM),
-
-              // Bouton de mise à jour
-              ElevatedButton(
-                onPressed: _updateTransaction,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 18, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: _cardColor,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: _borderColor),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: _primaryBlue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.calendar_today_rounded,
+                          color: _primaryBlue,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              loc.date,
+                              style: TextStyle(
+                                color: _textSecondary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${_selectedDate.day.toString().padLeft(2, '0')}/${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.year}',
+                              style: TextStyle(
+                                color: _textPrimary,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: _textSecondary,
+                        size: 22,
+                      ),
+                    ],
+                  ),
                 ),
-                child: const Text('Mettre à jour'),
+              ),
+              const SizedBox(height: 32),
+
+              // -- Update button with gradient --
+              Container(
+                height: 54,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: const LinearGradient(
+                    colors: [_primaryBlue, Color(0xFF3381FF)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _primaryBlue.withOpacity(0.3),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton(
+                  onPressed: _updateTransaction,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: EdgeInsets.zero,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.check_rounded, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Mettre \u00e0 jour',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),

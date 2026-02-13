@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:spendwise/models/budget.dart';
-import 'package:spendwise/services/data_service.dart';
+import 'package:spendwise/services/supabase_data_service.dart';
 
 class AddPlanning extends StatefulWidget {
   final bool isDarkMode;
@@ -43,7 +43,7 @@ class _AddPlanningState extends State<AddPlanning> {
               children: [
                 StreamBuilder<List<String>>(
                   stream: Stream.fromFuture(
-                      Future.value(DataService().getAllCategories())),
+                      SupabaseDataService().getAllCategoryNames()),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
                       return const CircularProgressIndicator();
@@ -292,16 +292,19 @@ class _AddPlanningState extends State<AddPlanning> {
             ),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (formKey.currentState!.validate()) {
+                final categoryId = await SupabaseDataService()
+                    .getCategoryIdByName(_selectedCategory!);
                 final budget = Budget(
-                  category: _selectedCategory!,
+                  categoryId: categoryId,
                   amount: double.parse(amountController.text),
                   startDate: startDate,
                   endDate: endDate,
                   description: descriptionController.text,
                 );
-                DataService().addBudget(budget);
+                await SupabaseDataService().addBudget(budget);
+                if (!context.mounted) return;
                 Navigator.pop(context);
               }
             },

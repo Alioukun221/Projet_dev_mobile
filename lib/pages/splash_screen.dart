@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
-import 'package:spendwise/pages/home_page.dart'; // Importez la page principale de l'app
+import 'package:spendwise/pages/auth/welcome_page.dart';
+import 'package:spendwise/pages/home_page.dart';
+import 'package:spendwise/providers/locale_provider.dart';
+import 'package:spendwise/providers/theme_provider.dart';
+import 'package:spendwise/services/auth_service.dart';
+import 'package:spendwise/services/data_migration_service.dart';
+import 'package:spendwise/services/supabase_data_service.dart';
 import 'package:spendwise/theme/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -31,17 +38,43 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    // Pour éviter l'orientation horizontale
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-    // Naviguer vers la page principale après 3 secondes
+    // Check auth state after splash animation
     Future.delayed(const Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-        // ignore: use_build_context_synchronously
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+      if (!mounted) return;
+      _navigateBasedOnAuth();
     });
+  }
+
+  void _navigateBasedOnAuth() async {
+    final isLoggedIn = AuthService().isLoggedIn;
+
+    if (isLoggedIn) {
+      // Run data migration (Hive → Supabase, one-time)
+      try {
+        await DataMigrationService().migrate();
+      } catch (_) {}
+
+      // Initialize Supabase data service
+      await SupabaseDataService().init();
+
+      // Load user preferences (theme + locale)
+      if (mounted) {
+        await Provider.of<ThemeProvider>(context, listen: false)
+            .loadFromProfile();
+        await Provider.of<LocaleProvider>(context, listen: false)
+            .loadFromProfile();
+      }
+    }
+
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => isLoggedIn ? const HomeScreen() : const WelcomePage(),
+      ),
+    );
   }
 
   @override
@@ -61,32 +94,11 @@ class _SplashScreenState extends State<SplashScreen>
             // Logo
             ScaleTransition(
               scale: _animation,
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(AppTheme.borderRadiusL),
-                  boxShadow: AppTheme.shadowM,
-                ),
-                child: const Icon(
-                  Icons.account_balance_wallet,
-                  size: 80,
-                  color: AppTheme.primaryColor,
-                ),
-              ),
-            ),
-            const SizedBox(height: AppTheme.spacingL),
-
-            // App Name
-            FadeTransition(
-              opacity: _animation,
-              child: Text(
-                'SpendWise',
-                style: AppTheme.headlineLarge.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: Image.asset(
+                'assets/images/logo_2-removebg.png',
+                width: 180,
+                height: 180,
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: AppTheme.spacingS),

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:intl/intl.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
 import '../models/transaction.dart';
 
+import 'package:spendwise/services/supabase_data_service.dart';
 import 'package:spendwise/theme/app_theme.dart';
-import 'package:spendwise/services/data_service.dart';
 
 class StatisticsPage extends StatefulWidget {
   const StatisticsPage({super.key});
@@ -17,50 +17,93 @@ class StatisticsPage extends StatefulWidget {
 class _StatisticsPageState extends State<StatisticsPage> {
   String _selectedPeriod = 'Mois';
   final List<String> _periods = ['Jour', 'Semaine', 'Mois', 'Année'];
+  int _touchedPieIndex = -1;
+
+  // --- Design system helpers ---
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+
+  Color get _cardColor => _isDark ? AppTheme.darkCardColor : Colors.white;
+
+  Color get _textPrimary => _isDark ? Colors.white : const Color(0xFF1A1D29);
+
+  Color get _textSecondary =>
+      _isDark ? AppTheme.darkTextSecondaryColor : const Color(0xFF6B7280);
+
+  Color get _border =>
+      _isDark ? AppTheme.darkBorderColor : Colors.black.withOpacity(0.04);
+
+  Color get _surfaceColor =>
+      _isDark ? AppTheme.darkSurfaceColor : const Color(0xFFF7F8FC);
+
+  static const Color _primaryColor = Color(0xFF005EFF);
+  static const Color _greenColor = Color(0xFF22C55E);
+  static const Color _redColor = Color(0xFFEF4444);
+
+  String _periodLabel(String key) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (key) {
+      case 'Jour':
+        return l10n.day;
+      case 'Semaine':
+        return l10n.week;
+      case 'Mois':
+        return l10n.month;
+      case 'Année':
+        return l10n.year;
+      default:
+        return key;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    return ValueListenableBuilder(
-      valueListenable: DataService().getTransactionsListenable(),
-      builder: (context, Box<Transaction> box, _) {
-        if (box.isEmpty) {
+    return StreamBuilder<List<Transaction>>(
+      stream: SupabaseDataService().transactionsStream,
+      builder: (context, snapshot) {
+        final allTransactions = snapshot.data ?? [];
+        if (allTransactions.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.bar_chart_outlined,
-                  size: 64,
-                  color: isDarkMode
-                      ? Colors.grey[400]
-                      : AppTheme.textSecondaryColor,
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: _surfaceColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.bar_chart_rounded,
+                    size: 48,
+                    color: _textSecondary,
+                  ),
                 ),
-                const SizedBox(height: AppTheme.spacingM),
+                const SizedBox(height: 20),
                 Text(
                   AppLocalizations.of(context)!.noData,
-                  style: AppTheme.titleMedium.copyWith(
-                    color: isDarkMode
-                        ? Colors.grey[400]
-                        : AppTheme.textSecondaryColor,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: _textPrimary,
+                    letterSpacing: -0.3,
                   ),
                 ),
-                const SizedBox(height: AppTheme.spacingS),
+                const SizedBox(height: 8),
                 Text(
                   AppLocalizations.of(context)!.noDataDescription,
-                  style: AppTheme.bodyMedium.copyWith(
-                    color: isDarkMode
-                        ? Colors.grey[400]
-                        : AppTheme.textSecondaryColor,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: _textSecondary,
+                    height: 1.4,
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
           );
         }
 
-        final transactions = box.values.toList();
+        final transactions = allTransactions;
         final now = DateTime.now();
         DateTime startDate;
 
@@ -91,296 +134,64 @@ class _StatisticsPageState extends State<StatisticsPage> {
         double totalExpenses = 0;
 
         for (var tx in filteredTransactions) {
-          if (tx.type == 'dépôt') {
-            totalIncome += tx.montant;
+          if (tx.isDeposit) {
+            totalIncome += tx.amount;
           } else {
-            totalExpenses += tx.montant;
+            totalExpenses += tx.amount;
           }
         }
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(AppTheme.spacingM),
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                height: 20,
-              ),
-              SegmentedButton<String>(
-                showSelectedIcon: false,
-                style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.resolveWith<Color?>(
-                    (Set<MaterialState> states) {
-                      if (states.contains(MaterialState.selected)) {
-                        return Theme.of(context)
-                            .colorScheme
-                            .primary; // Or any custom color
-                      }
-                      return null; // Use default theme color for unselected
-                    },
-                  ),
-                  foregroundColor: MaterialStateProperty.resolveWith<Color?>(
-                      (Set<MaterialState> states) {
-                    if (states.contains(MaterialState.selected)) {
-                      return Theme.of(context)
-                          .colorScheme
-                          .onPrimary; // Text/icon color when selected
-                    }
-                    return Theme.of(context).colorScheme.onSurface;
-                  }),
-                  minimumSize:
-                      MaterialStateProperty.all(Size(double.infinity, 80)),
-                  visualDensity: VisualDensity.compact,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                expandedInsets: EdgeInsets.symmetric(horizontal: 0),
-                segments: <ButtonSegment<String>>[
-                  ButtonSegment<String>(
-                    value: _periods[0],
-                    label: Text(AppLocalizations.of(context)!.day),
-                  ),
-                  ButtonSegment<String>(
-                    value: _periods[1],
-                    label: Text(AppLocalizations.of(context)!.week),
-                  ),
-                  ButtonSegment<String>(
-                    value: _periods[2],
-                    label: Text(AppLocalizations.of(context)!.month),
-                  ),
-                  ButtonSegment<String>(
-                    value: _periods[3],
-                    label: Text(AppLocalizations.of(context)!.year),
-                  ),
-                ],
-                selected: {_selectedPeriod},
-                onSelectionChanged: (Set<String> newSelection) {
-                  setState(() {
-                    _selectedPeriod = newSelection.first;
-                  });
-                },
-              ),
-              const SizedBox(height: AppTheme.spacingL),
+              const SizedBox(height: 12),
 
-              // Résumé
+              // --- Period selector: modern chip pills ---
+              _buildPeriodSelector(),
+              const SizedBox(height: 24),
+
+              // --- Summary cards ---
               Row(
                 children: [
                   Expanded(
                     child: _buildSummaryCard(
-                      AppLocalizations.of(context)!.deposit,
-                      totalIncome,
-                      AppTheme.successColor,
-                      isDarkMode,
+                      icon: Icons.south_west_rounded,
+                      label: AppLocalizations.of(context)!.deposit,
+                      amount: totalIncome,
+                      color: _greenColor,
                     ),
                   ),
-                  const SizedBox(width: AppTheme.spacingM),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: _buildSummaryCard(
-                      AppLocalizations.of(context)!.withdrawal,
-                      totalExpenses,
-                      AppTheme.errorColor,
-                      isDarkMode,
+                      icon: Icons.north_east_rounded,
+                      label: AppLocalizations.of(context)!.withdrawal,
+                      amount: totalExpenses,
+                      color: _redColor,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: AppTheme.spacingL),
+              const SizedBox(height: 28),
 
-              // Graphique en barres
-              Text(
+              // --- Bar chart section ---
+              _buildSectionHeader(
                 AppLocalizations.of(context)!.transactionEvolution,
-                style: AppTheme.titleLarge.copyWith(
-                    color:
-                        isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
-                    fontWeight: FontWeight.w500),
               ),
-              const SizedBox(height: AppTheme.spacingM),
-              Container(
-                height: 300,
-                padding: const EdgeInsets.all(AppTheme.spacingM),
-                decoration: BoxDecoration(
-                  color: isDarkMode ? Colors.grey[850] : AppTheme.surfaceColor,
-                  borderRadius: BorderRadius.circular(AppTheme.borderRadiusL),
-                  boxShadow: isDarkMode ? null : AppTheme.shadowM,
-                ),
-                child: BarChart(
-                  BarChartData(
-                    alignment: BarChartAlignment.spaceAround,
-                    maxY: (totalIncome > totalExpenses
-                            ? totalIncome
-                            : totalExpenses) *
-                        1.2,
-                    barTouchData: BarTouchData(enabled: false),
-                    titlesData: FlTitlesData(
-                      show: true,
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          getTitlesWidget: (value, meta) {
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: Text(
-                                value == 0
-                                    ? AppLocalizations.of(context)!.deposit
-                                    : AppLocalizations.of(context)!.withdrawal,
-                                style: TextStyle(
-                                  color: isDarkMode
-                                      ? Colors.grey[400]
-                                      : AppTheme.textSecondaryColor,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      leftTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 40,
-                          getTitlesWidget: (value, meta) {
-                            return Text(
-                              '${value.toInt()}',
-                              style: TextStyle(
-                                color: isDarkMode
-                                    ? Colors.grey[400]
-                                    : AppTheme.textSecondaryColor,
-                                fontSize: 12,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      topTitles: AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      rightTitles: AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                    ),
-                    gridData: FlGridData(
-                      show: true,
-                      drawVerticalLine: false,
-                      horizontalInterval: ((totalIncome > totalExpenses
-                                  ? totalIncome
-                                  : totalExpenses) /
-                              5)
-                          .clamp(1, double.infinity),
-                      getDrawingHorizontalLine: (value) {
-                        return FlLine(
-                          color:
-                              isDarkMode ? Colors.grey[800] : Colors.grey[300],
-                          strokeWidth: 1,
-                        );
-                      },
-                    ),
-                    borderData: FlBorderData(
-                      show: true,
-                      border: Border(
-                        bottom: BorderSide(
-                          color: isDarkMode
-                              ? Colors.grey[800]!
-                              : Colors.grey[300]!,
-                          width: 1,
-                        ),
-                        left: BorderSide(
-                          color: isDarkMode
-                              ? Colors.grey[800]!
-                              : Colors.grey[300]!,
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                    barGroups: [
-                      BarChartGroupData(
-                        x: 0,
-                        barRods: [
-                          BarChartRodData(
-                            toY: totalIncome,
-                            color: AppTheme.successColor,
-                            width: 20,
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(6),
-                            ),
-                          ),
-                        ],
-                      ),
-                      BarChartGroupData(
-                        x: 1,
-                        barRods: [
-                          BarChartRodData(
-                            toY: totalExpenses,
-                            color: AppTheme.errorColor,
-                            width: 20,
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(6),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppTheme.spacingL),
+              const SizedBox(height: 12),
+              _buildBarChartCard(totalIncome, totalExpenses),
+              const SizedBox(height: 28),
 
-              // Graphique circulaire
-              Text(
+              // --- Pie chart section ---
+              _buildSectionHeader(
                 AppLocalizations.of(context)!.breakdown,
-                style: AppTheme.titleLarge.copyWith(
-                    color:
-                        isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
-                    fontWeight: FontWeight.w500),
               ),
-              const SizedBox(height: AppTheme.spacingM),
-              Container(
-                height: 300,
-                padding: const EdgeInsets.all(AppTheme.spacingM),
-                decoration: BoxDecoration(
-                  color: isDarkMode ? Colors.grey[850] : AppTheme.surfaceColor,
-                  borderRadius: BorderRadius.circular(AppTheme.borderRadiusL),
-                  boxShadow: isDarkMode ? null : AppTheme.shadowM,
-                ),
-                child: PieChart(
-                  PieChartData(
-                    sections: [
-                      PieChartSectionData(
-                        value: totalIncome,
-                        title: AppLocalizations.of(context)!.deposit,
-                        color: AppTheme.successColor,
-                        radius: 100,
-                        titleStyle: AppTheme.bodyMedium.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      PieChartSectionData(
-                        value: totalExpenses,
-                        title: AppLocalizations.of(context)!.withdrawal,
-                        color: AppTheme.errorColor,
-                        radius: 100,
-                        titleStyle: AppTheme.bodyMedium.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                    centerSpaceRadius: 40,
-                    sectionsSpace: 2,
-                    startDegreeOffset: -90,
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppTheme.spacingL),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildLegendItem(AppLocalizations.of(context)!.deposit,
-                      AppTheme.successColor, isDarkMode),
-                  const SizedBox(width: AppTheme.spacingL),
-                  _buildLegendItem(AppLocalizations.of(context)!.withdrawal,
-                      AppTheme.errorColor, isDarkMode),
-                ],
-              ),
+              const SizedBox(height: 12),
+              _buildPieChartCard(totalIncome, totalExpenses),
+              const SizedBox(height: 70),
             ],
           ),
         );
@@ -388,54 +199,508 @@ class _StatisticsPageState extends State<StatisticsPage> {
     );
   }
 
-  Widget _buildSummaryCard(
-      String label, double amount, Color color, bool isDarkMode) {
+  // ------------------------------------------------------------------
+  // Period selector: pill-shaped chip buttons
+  // ------------------------------------------------------------------
+  Widget _buildPeriodSelector() {
     return Container(
-      padding: const EdgeInsets.all(AppTheme.spacingM),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isDarkMode ? Colors.grey[850] : AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppTheme.borderRadiusL),
-        boxShadow: isDarkMode ? null : AppTheme.shadowM,
+        color: _cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: AppTheme.titleMedium.copyWith(
-              fontSize: 17,
-              color:
-                  isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
+      child: Row(
+        children: _periods.map((period) {
+          final isSelected = _selectedPeriod == period;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedPeriod = period;
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected ? _primaryColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: _primaryColor.withOpacity(0.25),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Center(
+                  child: Text(
+                    _periodLabel(period),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight:
+                          isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected ? Colors.white : _textSecondary,
+                    ),
+                  ),
+                ),
+              ),
             ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // Section header (icon + title) -- same pattern as dashboard
+  // ------------------------------------------------------------------
+  Widget _buildSectionHeader(String title) {
+    return Row(
+      children: [
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w500,
+            color: _textPrimary,
+            letterSpacing: -0.3,
           ),
-          const SizedBox(height: AppTheme.spacingS),
-          Text(
-            '${amount.toStringAsFixed(1)} CFA',
-            style: AppTheme.titleLarge.copyWith(
-                color: color, fontWeight: FontWeight.w700, fontSize: 17),
+        ),
+      ],
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // Summary mini-card (icon + label + amount) -- dashboard style
+  // ------------------------------------------------------------------
+  Widget _buildSummaryCard({
+    required IconData icon,
+    required String label,
+    required double amount,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _cardColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: _textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  NumberFormat('#,###', 'fr_FR').format(amount),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: _textPrimary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildLegendItem(String label, Color color, bool isDarkMode) {
-    return Row(
-      children: [
-        Container(
-          width: 16,
-          height: 16,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
+  // ------------------------------------------------------------------
+  // Bar chart card
+  // ------------------------------------------------------------------
+  Widget _buildBarChartCard(double totalIncome, double totalExpenses) {
+    final maxY =
+        (totalIncome > totalExpenses ? totalIncome : totalExpenses) * 1.2;
+
+    return Container(
+      height: 300,
+      padding: const EdgeInsets.fromLTRB(12, 20, 20, 12),
+      decoration: BoxDecoration(
+        color: _cardColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
+        ],
+      ),
+      child: BarChart(
+        BarChartData(
+          alignment: BarChartAlignment.spaceAround,
+          maxY: maxY,
+          barTouchData: BarTouchData(
+            enabled: true,
+            touchTooltipData: BarTouchTooltipData(
+              tooltipRoundedRadius: 10,
+              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                return BarTooltipItem(
+                  '${NumberFormat('#,###', 'fr_FR').format(rod.toY)} CFA',
+                  const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                );
+              },
+            ),
+          ),
+          titlesData: FlTitlesData(
+            show: true,
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 5.0),
+                    child: Text(
+                      value == 0
+                          ? AppLocalizations.of(context)!.deposit
+                          : AppLocalizations.of(context)!.withdrawal,
+                      style: TextStyle(
+                        color: _textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 46,
+                getTitlesWidget: (value, meta) {
+                  if (value == 0 || value == maxY) return const SizedBox();
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Text(
+                      NumberFormat.compact(locale: 'fr_FR').format(value),
+                      style: TextStyle(
+                        color: _textSecondary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            topTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          ),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            horizontalInterval:
+                ((totalIncome > totalExpenses ? totalIncome : totalExpenses) /
+                        4)
+                    .clamp(1, double.infinity),
+            getDrawingHorizontalLine: (value) {
+              return FlLine(
+                color: _border,
+                strokeWidth: 1,
+                dashArray: [6, 4],
+              );
+            },
+          ),
+          borderData: FlBorderData(show: false),
+          barGroups: [
+            BarChartGroupData(
+              x: 0,
+              barRods: [
+                BarChartRodData(
+                  toY: totalIncome,
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      _greenColor.withOpacity(0.7),
+                      _greenColor,
+                    ],
+                  ),
+                  width: 36,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(10),
+                  ),
+                  backDrawRodData: BackgroundBarChartRodData(
+                    show: true,
+                    toY: maxY,
+                    color: _greenColor.withOpacity(0.04),
+                  ),
+                ),
+              ],
+            ),
+            BarChartGroupData(
+              x: 1,
+              barRods: [
+                BarChartRodData(
+                  toY: totalExpenses,
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      _redColor.withOpacity(0.7),
+                      _redColor,
+                    ],
+                  ),
+                  width: 36,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(10),
+                  ),
+                  backDrawRodData: BackgroundBarChartRodData(
+                    show: true,
+                    toY: maxY,
+                    color: _redColor.withOpacity(0.04),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
-        const SizedBox(width: AppTheme.spacingS),
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // Pie chart card with interactive touch + center total + legend
+  // ------------------------------------------------------------------
+  Widget _buildPieChartCard(double totalIncome, double totalExpenses) {
+    final total = totalIncome + totalExpenses;
+
+    if (total == 0) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+        decoration: BoxDecoration(
+          color: _cardColor,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: _border),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _surfaceColor,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.pie_chart_outline_rounded,
+                  size: 32, color: _textSecondary),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              AppLocalizations.of(context)!.noDataDescription,
+              style: TextStyle(
+                fontSize: 14,
+                color: _textSecondary,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    final incomePercent = (totalIncome / total * 100).toStringAsFixed(0);
+    final expensePercent = (totalExpenses / total * 100).toStringAsFixed(0);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: _cardColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 220,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                PieChart(
+                  PieChartData(
+                    pieTouchData: PieTouchData(
+                      touchCallback: (event, response) {
+                        setState(() {
+                          if (!event.isInterestedForInteractions ||
+                              response == null ||
+                              response.touchedSection == null) {
+                            _touchedPieIndex = -1;
+                            return;
+                          }
+                          _touchedPieIndex =
+                              response.touchedSection!.touchedSectionIndex;
+                        });
+                      },
+                    ),
+                    sections: [
+                      PieChartSectionData(
+                        value: totalIncome,
+                        color: _greenColor,
+                        radius: _touchedPieIndex == 0 ? 58 : 48,
+                        title: '$incomePercent%',
+                        titleStyle: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          fontSize: _touchedPieIndex == 0 ? 15 : 13,
+                        ),
+                        titlePositionPercentageOffset: 0.55,
+                      ),
+                      PieChartSectionData(
+                        value: totalExpenses,
+                        color: _redColor,
+                        radius: _touchedPieIndex == 1 ? 58 : 48,
+                        title: '$expensePercent%',
+                        titleStyle: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          fontSize: _touchedPieIndex == 1 ? 15 : 13,
+                        ),
+                        titlePositionPercentageOffset: 0.55,
+                      ),
+                    ],
+                    centerSpaceRadius: 56,
+                    sectionsSpace: 3,
+                    startDegreeOffset: -90,
+                  ),
+                ),
+                // Center text: net total
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      NumberFormat('#,###', 'fr_FR')
+                          .format(totalIncome - totalExpenses),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: _textPrimary,
+                      ),
+                    ),
+                    Text(
+                      'CFA',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: _textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Legend row with divider
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildLegendItem(
+                AppLocalizations.of(context)!.deposit,
+                _greenColor,
+                totalIncome,
+              ),
+              Container(
+                width: 1,
+                height: 30,
+                color: _border,
+              ),
+              _buildLegendItem(
+                AppLocalizations.of(context)!.withdrawal,
+                _redColor,
+                totalExpenses,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // Legend item: rounded square color indicator + label + amount
+  // ------------------------------------------------------------------
+  Widget _buildLegendItem(String label, Color color, double amount) {
+    return Column(
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                color: _textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
         Text(
-          label,
-          style: AppTheme.bodyMedium.copyWith(
-            color: isDarkMode ? Colors.grey[400] : AppTheme.textSecondaryColor,
-            fontWeight: FontWeight.w500,
+          '${NumberFormat('#,###', 'fr_FR').format(amount)} CFA',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: _textPrimary,
           ),
         ),
       ],

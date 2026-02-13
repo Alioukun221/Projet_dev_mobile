@@ -12,41 +12,67 @@ class AboutPage extends StatefulWidget {
 }
 
 class _AboutPageState extends State<AboutPage> {
-  // Fonction pour ouvrir un lien
-  // void _launchURL(String url) async {
-  //   if (await canLaunchUrl(Uri.parse(url))) {
-  //     await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-  //   }
-  // }
-
   bool get _isDarkMode => widget.isDarkMode;
+
+  // Design system colors
+  Color get _bgColor =>
+      _isDarkMode ? AppTheme.darkBgColor : const Color(0xFFF7F8FC);
+  Color get _cardColor =>
+      _isDarkMode ? AppTheme.darkCardColor : Colors.white;
+  Color get _textPrimary =>
+      _isDarkMode ? Colors.white : const Color(0xFF1A1D29);
+  Color get _textSecondary =>
+      _isDarkMode ? AppTheme.darkTextSecondaryColor : const Color(0xFF6B7280);
+  Color get _borderColor => _isDarkMode
+      ? AppTheme.darkBorderColor
+      : Colors.black.withOpacity(0.04);
+
+  static const Color _primaryBlue = Color(0xFF005EFF);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkMode ? Colors.grey[850] : Colors.white,
+      backgroundColor: _bgColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back,
-            color: _isDarkMode ? Colors.white : Colors.black,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 12),
+          child: Center(
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: _cardColor,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _borderColor),
+              ),
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                icon: Icon(
+                  Icons.arrow_back_ios_new,
+                  size: 18,
+                  color: _textPrimary,
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
           ),
-          onPressed: () => Navigator.of(context).pop(),
         ),
-        backgroundColor: _isDarkMode ? Colors.grey[850] : Colors.white,
-        elevation: 2,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: Text(
           AppLocalizations.of(context)!.about,
           style: TextStyle(
-            color: _isDarkMode ? Colors.white : Colors.black,
-            fontWeight: FontWeight.w500,
+            color: _textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.3,
           ),
         ),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppTheme.spacingM),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -58,70 +84,93 @@ class _AboutPageState extends State<AboutPage> {
                     width: 100,
                     height: 100,
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor,
-                      borderRadius:
-                          BorderRadius.circular(AppTheme.borderRadiusL),
-                      boxShadow: AppTheme.shadowM,
+                      gradient: const LinearGradient(
+                        colors: [_primaryBlue, Color(0xFF3B82F6)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _primaryBlue.withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
                     ),
                     child: const Icon(
                       Icons.account_balance_wallet,
-                      size: 60,
+                      size: 48,
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: AppTheme.spacingM),
+                  const SizedBox(height: 20),
                   Text(
                     AppLocalizations.of(context)!.appTitle,
                     style: TextStyle(
-                      fontSize: AppTheme.titleLarge.fontSize,
-                      fontWeight: FontWeight.bold,
-                      color: _isDarkMode
-                          ? Colors.white
-                          : AppTheme.textPrimaryColor,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: _textPrimary,
+                      letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: AppTheme.spacingS),
-                  Text(
-                    'Version 1.0.0',
-                    style: AppTheme.bodyMedium.copyWith(
-                      color: AppTheme.textSecondaryColor,
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _primaryBlue.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'Version 1.0.0',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: _primaryBlue,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: AppTheme.spacingL),
+            const SizedBox(height: 32),
 
             // Description
             Text(
               AppLocalizations.of(context)!.about,
               style: TextStyle(
-                fontSize: AppTheme.titleLarge.fontSize,
-                fontWeight: FontWeight.w400,
-                color: _isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: _textPrimary,
+                letterSpacing: -0.3,
               ),
             ),
-            const SizedBox(height: AppTheme.spacingS),
+            const SizedBox(height: 10),
             Text(
               AppLocalizations.of(context)!.appDescription,
               style: TextStyle(
-                fontSize: AppTheme.bodyLarge.fontSize,
-                fontWeight: FontWeight.w300,
-                color: _isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
+                fontSize: 15,
+                fontWeight: FontWeight.w400,
+                color: _textSecondary,
+                height: 1.5,
               ),
             ),
-            const SizedBox(height: AppTheme.spacingL),
+            const SizedBox(height: 28),
 
             // Features
             Text(
               AppLocalizations.of(context)!.features,
               style: TextStyle(
-                fontSize: AppTheme.titleLarge.fontSize,
-                fontWeight: FontWeight.w400,
-                color: _isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: _textPrimary,
+                letterSpacing: -0.3,
               ),
             ),
-            const SizedBox(height: AppTheme.spacingS),
+            const SizedBox(height: 12),
             _buildFeatureItem(
                 icon: Icons.add_circle_outline,
                 title:
@@ -174,118 +223,177 @@ class _AboutPageState extends State<AboutPage> {
                   AppLocalizations.of(context)!.featureLanguageDescription,
             ),
 
-            const SizedBox(height: AppTheme.spacingL),
+            const SizedBox(height: 28),
 
             // Developer Info
             Text(
               AppLocalizations.of(context)!.developer,
               style: TextStyle(
-                fontSize: AppTheme.titleLarge.fontSize,
-                fontWeight: FontWeight.w400,
-                color: _isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: _textPrimary,
+                letterSpacing: -0.3,
               ),
             ),
-            const SizedBox(height: AppTheme.spacingS),
+            const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.all(AppTheme.spacingM),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: _isDarkMode
-                    ? const Color.fromARGB(255, 72, 71, 71)
-                    : AppTheme.surfaceColor,
-                borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
-                boxShadow: AppTheme.shadowS,
+                color: _cardColor,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: _borderColor),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    AppLocalizations.of(context)!.developerTitle,
-                    style: TextStyle(
-                      fontSize: AppTheme.titleMedium.fontSize,
-                      fontWeight: FontWeight.w300,
-                      color: _isDarkMode
-                          ? Colors.white
-                          : AppTheme.textPrimaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: AppTheme.spacingS),
-                  Text(
-                    AppLocalizations.of(context)!.developerSubtitle,
-                    style: AppTheme.bodyMedium.copyWith(
-                      color: const Color.fromARGB(255, 52, 51, 51),
-                      fontSize: AppTheme.bodyMedium.fontSize,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                  const SizedBox(height: AppTheme.spacingS),
                   Row(
                     children: [
-                      Icon(
-                        Icons.email_outlined,
-                        size: 20,
-                        color: AppTheme.textSecondaryColor,
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: _primaryBlue.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(
+                          Icons.person_outline,
+                          color: _primaryBlue,
+                          size: 22,
+                        ),
                       ),
-                      const SizedBox(width: AppTheme.spacingS),
-                      InkWell(
-                        onTap: () {
-                          final Uri emailLaunchUri = Uri(
-                            scheme: 'mailto',
-                            path: 'bmouhamadoualiou@ept.sn',
-                            queryParameters: {
-                              'subject': 'À propos de SpendWise',
-                            },
-                          );
-                          launchUrl(emailLaunchUri);
-                        },
-                        child: Text(
-                          'bmouhamadoualiou@ept.sn',
-                          style: AppTheme.bodyMedium.copyWith(
-                            color: AppTheme.secondaryColor,
-                            fontSize: AppTheme.bodyMedium.fontSize,
-                          ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!.developerTitle,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: _textPrimary,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              AppLocalizations.of(context)!.developerSubtitle,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w400,
+                                color: _textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppTheme.spacingS),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.code,
-                        size: 20,
-                        color: AppTheme.textSecondaryColor,
-                      ),
-                      const SizedBox(width: AppTheme.spacingS),
-                      InkWell(
-                        onTap: () {
-                          final Uri githubUri =
-                              Uri.parse('https://github.com/Alioukun221');
-                          launchUrl(
-                            githubUri,
-                            mode: LaunchMode.platformDefault,
-                          );
+                  const SizedBox(height: 16),
+                  Divider(color: _borderColor, height: 1),
+                  const SizedBox(height: 16),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () {
+                      final Uri emailLaunchUri = Uri(
+                        scheme: 'mailto',
+                        path: 'bmouhamadoualiou@ept.sn',
+                        queryParameters: {
+                          'subject': 'A propos de SpendWise',
                         },
-                        child: Text(
-                          'https://github.com/Alioukun221',
-                          style: AppTheme.bodyMedium.copyWith(
-                            color: AppTheme.secondaryColor,
-                            fontSize: AppTheme.bodyMedium.fontSize,
+                      );
+                      launchUrl(emailLaunchUri);
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: _primaryBlue.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              Icons.email_outlined,
+                              size: 18,
+                              color: _primaryBlue,
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'bmouhamadoualiou@ept.sn',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: _primaryBlue,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () {
+                      final Uri githubUri =
+                          Uri.parse('https://github.com/Alioukun221');
+                      launchUrl(
+                        githubUri,
+                        mode: LaunchMode.platformDefault,
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: _primaryBlue.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              Icons.code,
+                              size: 18,
+                              color: _primaryBlue,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'github.com/Alioukun221',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: _primaryBlue,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: AppTheme.spacingL),
+            const SizedBox(height: 32),
 
             // Copyright
             Center(
               child: Text(
                 AppLocalizations.of(context)!.copyright,
-                style: AppTheme.bodyMedium.copyWith(
-                  color: AppTheme.textSecondaryColor,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: _textSecondary,
                 ),
               ),
             ),
@@ -301,29 +409,36 @@ class _AboutPageState extends State<AboutPage> {
     required String description,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: AppTheme.spacingM),
-      padding: const EdgeInsets.all(AppTheme.spacingM),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _isDarkMode
-            ? const Color.fromARGB(255, 72, 71, 71)
-            : AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppTheme.borderRadiusM),
-        boxShadow: AppTheme.shadowM,
+        color: _cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(AppTheme.spacingS),
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(AppTheme.borderRadiusS),
+              color: _primaryBlue.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
               icon,
-              color: AppTheme.primaryColor,
+              color: _primaryBlue,
+              size: 22,
             ),
           ),
-          const SizedBox(width: AppTheme.spacingM),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -331,19 +446,19 @@ class _AboutPageState extends State<AboutPage> {
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: AppTheme.titleMedium.fontSize,
-                    fontWeight: FontWeight.w400,
-                    color:
-                        _isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: _textPrimary,
+                    letterSpacing: -0.2,
                   ),
                 ),
-                const SizedBox(height: AppTheme.spacingXS),
+                const SizedBox(height: 4),
                 Text(
                   description,
-                  style: AppTheme.bodyMedium.copyWith(
-                    color: _isDarkMode
-                        ? const Color.fromARGB(255, 158, 156, 156)
-                        : AppTheme.textSecondaryColor,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: _textSecondary,
+                    height: 1.4,
                   ),
                 ),
               ],

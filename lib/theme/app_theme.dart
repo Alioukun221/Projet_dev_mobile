@@ -1,15 +1,24 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Colors
+  // Colors - Light
   static const Color primaryColor = Color(0xFF005EFF);
   static const Color secondaryColor = Color(0xFF008CFF);
+  static const Color accentColor = Color(0xFF00D9B5);
   static const Color successColor = Color(0xFF4CAF50);
   static const Color errorColor = Color(0xFFE53935);
   static const Color backgroundColor = Color(0xFFF5F5F5);
   static const Color surfaceColor = Colors.white;
-  static const Color textPrimaryColor = Color.fromARGB(255, 34, 31, 31);
+  static const Color textPrimaryColor = Color.fromARGB(255, 42, 41, 41);
   static const Color textSecondaryColor = Color(0xFF757575);
+
+  // Colors - Dark (navy blue tint, not pure black)
+  static const Color darkBgColor = Color(0xFF0F1328);
+  static const Color darkSurfaceColor = Color(0xFF141836);
+  static const Color darkCardColor = Color(0xFF1A1F42);
+  static const Color darkTextPrimaryColor = Colors.white;
+  static const Color darkTextSecondaryColor = Color(0xFF9CA3AF);
+  static const Color darkBorderColor = Color(0x1FFFFFFF); // white 12%
 
   // Spacing
   static const double spacingXS = 4.0;
@@ -157,6 +166,96 @@ class AppTheme {
           borderSide: const BorderSide(color: errorColor),
         ),
         contentPadding: const EdgeInsets.all(spacingM),
+      ),
+    );
+  }
+
+  // Dark Theme Data
+  static ThemeData get darkTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme.dark(
+        primary: primaryColor,
+        secondary: accentColor,
+        error: errorColor,
+        surface: darkCardColor,
+        onSurface: darkTextPrimaryColor,
+      ),
+      scaffoldBackgroundColor: darkBgColor,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        foregroundColor: darkTextPrimaryColor,
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: darkTextPrimaryColor,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: darkCardColor,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(borderRadiusM),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: accentColor,
+          foregroundColor: darkBgColor,
+          padding: const EdgeInsets.symmetric(
+            horizontal: spacingM,
+            vertical: spacingS,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(borderRadiusL),
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.06),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(borderRadiusL),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(borderRadiusL),
+          borderSide: const BorderSide(color: darkBorderColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(borderRadiusL),
+          borderSide: const BorderSide(color: primaryColor, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(borderRadiusL),
+          borderSide: const BorderSide(color: errorColor),
+        ),
+        contentPadding: const EdgeInsets.all(spacingM),
+        hintStyle: TextStyle(color: Colors.white.withOpacity(0.25)),
+      ),
+      dividerColor: darkBorderColor,
+      popupMenuTheme: PopupMenuThemeData(
+        color: darkCardColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: darkCardColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: darkCardColor,
+        contentTextStyle: const TextStyle(color: darkTextPrimaryColor),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
       ),
     );
   }

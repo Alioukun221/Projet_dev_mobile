@@ -274,4 +274,157 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get restore => 'Restaurer';
+
+  @override
+  String get goodMorning => 'Bonjour';
+
+  @override
+  String get goodAfternoon => 'Bon après-midi';
+
+  @override
+  String get goodEvening => 'Bonsoir';
+
+  @override
+  String get lightMode => 'Mode clair';
+
+  @override
+  String get darkMode => 'Mode sombre';
+
+  @override
+  String get language => 'Langue';
+
+  @override
+  String get logout => 'Déconnexion';
+
+  @override
+  String get authWelcomeTitle => 'Gérez votre\nbudget\nsimplement';
+
+  @override
+  String get authWelcomeSubtitle => 'Suivez vos dépenses et restez dans votre\nbudget avec des mises à jour en temps réel\net des alertes.';
+
+  @override
+  String get authSignIn => 'Se connecter';
+
+  @override
+  String get authSignUp => 'S\'inscrire';
+
+  @override
+  String get authNoAccount => 'Pas encore de compte ? ';
+
+  @override
+  String get authHaveAccount => 'Déjà un compte ? ';
+
+  @override
+  String get authWelcomeBack => 'Content de\nvous revoir';
+
+  @override
+  String get authSignInSubtitle => 'Connectez-vous pour continuer à gérer votre budget';
+
+  @override
+  String get authEmailHint => 'Adresse e-mail';
+
+  @override
+  String get authPasswordHint => 'Mot de passe';
+
+  @override
+  String get authForgotPassword => 'Mot de passe oublié ?';
+
+  @override
+  String get authOrContinueWith => 'ou continuer avec';
+
+  @override
+  String get authOrSignUpWith => 'ou s\'inscrire avec';
+
+  @override
+  String get authEmailRequired => 'Veuillez entrer votre e-mail';
+
+  @override
+  String get authEmailInvalid => 'Veuillez entrer un e-mail valide';
+
+  @override
+  String get authPasswordRequired => 'Veuillez entrer votre mot de passe';
+
+  @override
+  String get authPasswordTooShort => 'Le mot de passe doit contenir au moins 6 caractères';
+
+  @override
+  String get authCreateAccount => 'Créer un\ncompte';
+
+  @override
+  String get authCreateAccountSubtitle => 'Commencez votre parcours vers une gestion intelligente';
+
+  @override
+  String get authFullNameHint => 'Nom complet';
+
+  @override
+  String get authConfirmPasswordHint => 'Confirmer le mot de passe';
+
+  @override
+  String get authNameRequired => 'Veuillez entrer votre nom';
+
+  @override
+  String get authPasswordEnter => 'Veuillez entrer un mot de passe';
+
+  @override
+  String get authPasswordMismatch => 'Les mots de passe ne correspondent pas';
+
+  @override
+  String get authConfirmPasswordRequired => 'Veuillez confirmer votre mot de passe';
+
+  @override
+  String get authAgreeTerms => 'J\'accepte les ';
+
+  @override
+  String get authTermsConditions => 'Conditions d\'utilisation';
+
+  @override
+  String get authAgreeTermsRequired => 'Veuillez accepter les conditions d\'utilisation';
+
+  @override
+  String get authCreateAccountBtn => 'Créer le compte';
+
+  @override
+  String get authAccountCreated => 'Compte créé ! Vérifiez votre e-mail pour confirmer.';
+
+  @override
+  String get authUnexpectedError => 'Une erreur inattendue s\'est produite';
+
+  @override
+  String get authResetPassword => 'Réinitialiser\nle mot de passe';
+
+  @override
+  String get authResetSubtitle => 'Entrez votre e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.';
+
+  @override
+  String get authResetEmailSentSubtitle => 'Nous avons envoyé un lien de réinitialisation à votre e-mail. Vérifiez votre boîte de réception.';
+
+  @override
+  String get authSendResetLink => 'Envoyer le lien';
+
+  @override
+  String get authEmailSent => 'E-mail envoyé !';
+
+  @override
+  String get authBackToSignIn => 'Retour à la connexion';
+
+  @override
+  String get profile => 'Profil';
+
+  @override
+  String get profileTitle => 'Mon profil';
+
+  @override
+  String get editAvatar => 'Modifier l\'avatar';
+
+  @override
+  String get displayName => 'Nom d\'affichage';
+
+  @override
+  String get email => 'E-mail';
+
+  @override
+  String get chooseAvatar => 'Choisir un avatar';
+
+  @override
+  String get profileUpdated => 'Profil mis à jour';
 }
