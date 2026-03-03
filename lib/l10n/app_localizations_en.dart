@@ -427,4 +427,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileUpdated => 'Profile updated';
+
+  @override
+  String get notificationSettings => 'Auto notifications';
+
+  @override
+  String get notificationPermissionGranted => 'Permission granted';
+
+  @override
+  String get notificationPermissionRequired => 'Permission required';
+
+  @override
+  String get grantPermission => 'Grant';
+
+  @override
+  String get enableNotificationListening => 'Enable listening';
+
+  @override
+  String get notificationModeTitle => 'Capture mode';
+
+  @override
+  String get notificationModeAuto => 'Automatic';
+
+  @override
+  String get notificationModeAutoDesc => 'Transactions are created automatically';
+
+  @override
+  String get notificationModeConfirmation => 'Manual confirmation';
+
+  @override
+  String get notificationModeConfirmationDesc => 'Transactions are queued for approval';
+
+  @override
+  String get defaultCategories => 'Default categories';
+
+  @override
+  String get pendingTransactions => 'Pending transactions';
+
+  @override
+  String get noPendingTransactions => 'No pending transactions';
+
+  @override
+  String get approveTransaction => 'Approve';
+
+  @override
+  String get rejectTransaction => 'Reject';
+
+  @override
+  String get approveAll => 'Approve all';
 }

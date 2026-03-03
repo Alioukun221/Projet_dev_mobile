@@ -8,6 +8,7 @@ import 'package:spendwise/providers/locale_provider.dart';
 import 'package:spendwise/providers/theme_provider.dart';
 import 'package:spendwise/services/auth_service.dart';
 import 'package:spendwise/services/data_migration_service.dart';
+import 'package:spendwise/services/notification_transaction_service.dart';
 import 'package:spendwise/services/supabase_data_service.dart';
 import 'package:spendwise/theme/app_theme.dart';
 
@@ -58,6 +59,9 @@ class _SplashScreenState extends State<SplashScreen>
 
       // Initialize Supabase data service
       await SupabaseDataService().init();
+
+      // Initialize notification listening service
+      await NotificationTransactionService().init();
 
       // Load user preferences (theme + locale)
       if (mounted) {

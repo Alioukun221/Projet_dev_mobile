@@ -936,6 +936,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Profile updated'**
   String get profileUpdated;
+
+  /// No description provided for @notificationSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto notifications'**
+  String get notificationSettings;
+
+  /// No description provided for @notificationPermissionGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission granted'**
+  String get notificationPermissionGranted;
+
+  /// No description provided for @notificationPermissionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission required'**
+  String get notificationPermissionRequired;
+
+  /// No description provided for @grantPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Grant'**
+  String get grantPermission;
+
+  /// No description provided for @enableNotificationListening.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable listening'**
+  String get enableNotificationListening;
+
+  /// No description provided for @notificationModeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture mode'**
+  String get notificationModeTitle;
+
+  /// No description provided for @notificationModeAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic'**
+  String get notificationModeAuto;
+
+  /// No description provided for @notificationModeAutoDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Transactions are created automatically'**
+  String get notificationModeAutoDesc;
+
+  /// No description provided for @notificationModeConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual confirmation'**
+  String get notificationModeConfirmation;
+
+  /// No description provided for @notificationModeConfirmationDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Transactions are queued for approval'**
+  String get notificationModeConfirmationDesc;
+
+  /// No description provided for @defaultCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Default categories'**
+  String get defaultCategories;
+
+  /// No description provided for @pendingTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending transactions'**
+  String get pendingTransactions;
+
+  /// No description provided for @noPendingTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'No pending transactions'**
+  String get noPendingTransactions;
+
+  /// No description provided for @approveTransaction.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get approveTransaction;
+
+  /// No description provided for @rejectTransaction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get rejectTransaction;
+
+  /// No description provided for @approveAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve all'**
+  String get approveAll;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -36,12 +36,16 @@ class LocalCacheService {
   late Box _budgetsBox;
   late Box _categoriesBox;
   late Box _syncQueueBox;
+  late Box _notificationSettingsBox;
+  late Box _pendingTransactionsBox;
 
   Future<void> init() async {
     _transactionsBox = await Hive.openBox('cache_transactions');
     _budgetsBox = await Hive.openBox('cache_budgets');
     _categoriesBox = await Hive.openBox('cache_categories');
     _syncQueueBox = await Hive.openBox('sync_queue');
+    _notificationSettingsBox = await Hive.openBox('notification_settings');
+    _pendingTransactionsBox = await Hive.openBox('pending_transactions');
   }
 
   // ============ CACHE READ/WRITE ============
@@ -99,6 +103,70 @@ class LocalCacheService {
     if (raw == null) return [];
     return List.from(raw);
   }
+
+  // ============ NOTIFICATION SETTINGS ============
+
+  bool get isNotificationListeningEnabled =>
+      _notificationSettingsBox.get('enabled', defaultValue: false) as bool;
+
+  set isNotificationListeningEnabled(bool value) =>
+      _notificationSettingsBox.put('enabled', value);
+
+  String get notificationMode =>
+      _notificationSettingsBox.get('mode', defaultValue: 'confirmation') as String;
+
+  set notificationMode(String value) =>
+      _notificationSettingsBox.put('mode', value);
+
+  bool get isWaveEnabled =>
+      _notificationSettingsBox.get('wave_enabled', defaultValue: true) as bool;
+
+  set isWaveEnabled(bool value) =>
+      _notificationSettingsBox.put('wave_enabled', value);
+
+  bool get isOrangeMoneyEnabled =>
+      _notificationSettingsBox.get('om_enabled', defaultValue: true) as bool;
+
+  set isOrangeMoneyEnabled(bool value) =>
+      _notificationSettingsBox.put('om_enabled', value);
+
+  String? get defaultDepositCategoryId =>
+      _notificationSettingsBox.get('deposit_category_id') as String?;
+
+  set defaultDepositCategoryId(String? value) =>
+      _notificationSettingsBox.put('deposit_category_id', value);
+
+  String? get defaultWithdrawalCategoryId =>
+      _notificationSettingsBox.get('withdrawal_category_id') as String?;
+
+  set defaultWithdrawalCategoryId(String? value) =>
+      _notificationSettingsBox.put('withdrawal_category_id', value);
+
+  // ============ PENDING TRANSACTIONS ============
+
+  List<Map<String, dynamic>> getPendingTransactions() {
+    final raw = _pendingTransactionsBox.get('items');
+    if (raw == null) return [];
+    return (raw as List).map((e) => _deepCastMap(e)).toList();
+  }
+
+  void addPendingTransaction(Map<String, dynamic> tx) {
+    final list = getPendingTransactions();
+    list.add(tx);
+    _pendingTransactionsBox.put('items', list);
+  }
+
+  void removePendingTransaction(String id) {
+    final list = getPendingTransactions();
+    list.removeWhere((tx) => tx['id'] == id);
+    _pendingTransactionsBox.put('items', list);
+  }
+
+  void clearPendingTransactions() {
+    _pendingTransactionsBox.put('items', []);
+  }
+
+  int get pendingTransactionCount => getPendingTransactions().length;
 
   // Recursively cast Hive's internal maps to Map<String, dynamic>
   Map<String, dynamic> _deepCastMap(dynamic value) {

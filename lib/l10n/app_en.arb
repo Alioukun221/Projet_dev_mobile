@@ -141,5 +141,22 @@
     "displayName": "Display name",
     "email": "Email",
     "chooseAvatar": "Choose an avatar",
-    "profileUpdated": "Profile updated"
+    "profileUpdated": "Profile updated",
+
+    "notificationSettings": "Auto notifications",
+    "notificationPermissionGranted": "Permission granted",
+    "notificationPermissionRequired": "Permission required",
+    "grantPermission": "Grant",
+    "enableNotificationListening": "Enable listening",
+    "notificationModeTitle": "Capture mode",
+    "notificationModeAuto": "Automatic",
+    "notificationModeAutoDesc": "Transactions are created automatically",
+    "notificationModeConfirmation": "Manual confirmation",
+    "notificationModeConfirmationDesc": "Transactions are queued for approval",
+    "defaultCategories": "Default categories",
+    "pendingTransactions": "Pending transactions",
+    "noPendingTransactions": "No pending transactions",
+    "approveTransaction": "Approve",
+    "rejectTransaction": "Reject",
+    "approveAll": "Approve all"
 }

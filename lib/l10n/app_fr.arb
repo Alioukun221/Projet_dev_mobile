@@ -141,5 +141,22 @@
     "displayName": "Nom d'affichage",
     "email": "E-mail",
     "chooseAvatar": "Choisir un avatar",
-    "profileUpdated": "Profil mis à jour"
+    "profileUpdated": "Profil mis à jour",
+
+    "notificationSettings": "Notifications auto",
+    "notificationPermissionGranted": "Permission accordée",
+    "notificationPermissionRequired": "Permission requise",
+    "grantPermission": "Accorder",
+    "enableNotificationListening": "Activer l'écoute",
+    "notificationModeTitle": "Mode de capture",
+    "notificationModeAuto": "Automatique",
+    "notificationModeAutoDesc": "Les transactions sont créées automatiquement",
+    "notificationModeConfirmation": "Confirmation manuelle",
+    "notificationModeConfirmationDesc": "Les transactions sont mises en attente pour validation",
+    "defaultCategories": "Catégories par défaut",
+    "pendingTransactions": "Transactions en attente",
+    "noPendingTransactions": "Aucune transaction en attente",
+    "approveTransaction": "Approuver",
+    "rejectTransaction": "Rejeter",
+    "approveAll": "Tout approuver"
 }

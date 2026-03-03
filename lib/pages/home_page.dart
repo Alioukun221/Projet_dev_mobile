@@ -10,10 +10,13 @@ import 'package:spendwise/models/profile.dart';
 import 'package:spendwise/pages/statistics_page.dart';
 import 'package:spendwise/pages/transactions_page.dart';
 import 'package:spendwise/pages/categories_page.dart';
+import 'package:spendwise/pages/notification_settings_page.dart';
+import 'package:spendwise/pages/pending_transactions_page.dart';
 import 'package:spendwise/pages/auth/welcome_page.dart';
 import 'package:spendwise/providers/locale_provider.dart';
 import 'package:spendwise/providers/theme_provider.dart';
 import 'package:spendwise/services/auth_service.dart';
+import 'package:spendwise/services/notification_transaction_service.dart';
 import 'package:spendwise/services/supabase_data_service.dart';
 import 'package:spendwise/theme/app_theme.dart';
 
@@ -152,23 +155,70 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-            // Notification bell
+            // Notification bell with pending badge
             GestureDetector(
-              onTap: () {},
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: _isDarkMode
-                      ? Colors.white.withOpacity(0.08)
-                      : Colors.black.withOpacity(0.04),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(
-                  Icons.notifications_none_rounded,
-                  color: textColor,
-                  size: 22,
-                ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        PendingTransactionsPage(isDarkMode: _isDarkMode),
+                  ),
+                );
+              },
+              child: StreamBuilder<int>(
+                stream:
+                    NotificationTransactionService().pendingCountStream,
+                initialData:
+                    NotificationTransactionService().pendingCount,
+                builder: (context, snapshot) {
+                  final count = snapshot.data ?? 0;
+                  return Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: _isDarkMode
+                          ? Colors.white.withOpacity(0.08)
+                          : Colors.black.withOpacity(0.04),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Icon(
+                          Icons.notifications_none_rounded,
+                          color: textColor,
+                          size: 22,
+                        ),
+                        if (count > 0)
+                          Positioned(
+                            top: 6,
+                            right: 6,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: AppTheme.errorColor,
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 18,
+                                minHeight: 18,
+                              ),
+                              child: Text(
+                                count > 99 ? '99+' : '$count',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ],
@@ -291,6 +341,22 @@ class _HomeScreenState extends State<HomeScreen> {
                   MaterialPageRoute(
                     builder: (context) =>
                         CategoriesPage(isDarkMode: _isDarkMode),
+                  ),
+                );
+              },
+            ),
+            _buildDrawerItem(
+              icon: Icons.notifications_active_rounded,
+              label: AppLocalizations.of(context)!.notificationSettings,
+              textColor: textColor,
+              subtextColor: subtextColor,
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        NotificationSettingsPage(isDarkMode: _isDarkMode),
                   ),
                 );
               },

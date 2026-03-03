@@ -47,7 +47,8 @@ dependencies:
   supabase_flutter: ^2.8.4
   connectivity_plus: ^6.1.4
   flutter_dotenv: ^5.2.1
-  
+  notification_listener_service: ^0.3.1
+
 
 analyzer:
   errors:
@@ -69,7 +70,8 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/logo.png"
+  image_path: "assets/images/logo_2-removebg.png"
+  adaptive_icon_foreground: "assets/images/logo_2-removebg.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
