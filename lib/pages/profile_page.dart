@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/models/profile.dart';
-import 'package:spendwise/services/auth_service.dart';
+import 'package:spendwise/providers/profile_provider.dart';
 import 'package:spendwise/theme/app_theme.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -37,32 +38,22 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   Profile? _profile;
-  bool _loading = true;
+  bool _avatarInitialized = false;
   String _selectedAvatar = 'avatar_1';
 
   @override
-  void initState() {
-    super.initState();
-    _loadProfile();
-  }
-
-  Future<void> _loadProfile() async {
-    final data = await AuthService().getProfile();
-    if (data != null && mounted) {
-      final profile = Profile.fromJson(data);
-      setState(() {
-        _profile = profile;
-        _selectedAvatar = profile.avatar;
-        _loading = false;
-      });
-    } else if (mounted) {
-      setState(() => _loading = false);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_avatarInitialized) {
+      _avatarInitialized = true;
+      _profile = Provider.of<ProfileProvider>(context, listen: false).profile;
+      _selectedAvatar = _profile?.avatar ?? 'avatar_1';
     }
   }
 
   Future<void> _selectAvatar(String avatarId) async {
     setState(() => _selectedAvatar = avatarId);
-    await AuthService().updateProfile(avatar: avatarId);
+    await Provider.of<ProfileProvider>(context, listen: false).updateAvatar(avatarId);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -103,9 +94,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         centerTitle: true,
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
+      body: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Column(
                 children: [

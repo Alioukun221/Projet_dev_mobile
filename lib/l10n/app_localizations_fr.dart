@@ -475,4 +475,49 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get approveAll => 'Tout approuver';
+
+  @override
+  String get todos => 'Tâches';
+
+  @override
+  String get newTodo => 'Nouvelle tâche';
+
+  @override
+  String get addTodo => 'Programmer une tâche';
+
+  @override
+  String get editTodo => 'Modifier la tâche';
+
+  @override
+  String get noTodos => 'Aucune tâche programmée';
+
+  @override
+  String get createFirstTodo => 'Programmez vos dépenses et revenus à l\'avance.';
+
+  @override
+  String get dueDate => 'Date d\'échéance';
+
+  @override
+  String get recurrence => 'Récurrence';
+
+  @override
+  String get recurrenceNone => 'Aucune';
+
+  @override
+  String get recurrenceWeekly => 'Hebdo';
+
+  @override
+  String get recurrenceMonthly => 'Mensuel';
+
+  @override
+  String get markAsDone => 'Marquer fait';
+
+  @override
+  String get confirmComplete => 'Confirmer la complétion';
+
+  @override
+  String get overdueTasks => 'En retard';
+
+  @override
+  String get todayTasks => 'Aujourd\'hui';
 }

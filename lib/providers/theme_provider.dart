@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:spendwise/services/auth_service.dart';
 
@@ -7,15 +8,18 @@ class ThemeProvider extends ChangeNotifier {
   ThemeMode get themeMode => _themeMode;
   bool get isDarkMode => _themeMode == ThemeMode.dark;
 
+  void applyFromData(Map<String, dynamic>? data) {
+    if (data == null) return;
+    final theme = data['preferred_theme'] as String? ?? 'light';
+    _themeMode = theme == 'dark' ? ThemeMode.dark : ThemeMode.light;
+    notifyListeners();
+  }
+
   Future<void> loadFromProfile() async {
     try {
-      final profile = await AuthService().getProfile();
-      if (profile != null) {
-        final theme = profile['preferred_theme'] as String? ?? 'light';
-        _themeMode = theme == 'dark' ? ThemeMode.dark : ThemeMode.light;
-        notifyListeners();
-      }
-    } catch (_) {}
+      final data = await AuthService().getProfile();
+      applyFromData(data);
+    } catch (e) { debugPrint('ThemeProvider.loadFromProfile: $e'); }
   }
 
   Future<void> toggleTheme() async {
@@ -26,6 +30,6 @@ class ThemeProvider extends ChangeNotifier {
       await AuthService().updateProfile(
         preferredTheme: _themeMode == ThemeMode.dark ? 'dark' : 'light',
       );
-    } catch (_) {}
+    } catch (e) { debugPrint('ThemeProvider.toggleTheme: $e'); }
   }
 }

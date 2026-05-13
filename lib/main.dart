@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/config/supabase_config.dart';
 import 'package:spendwise/pages/splash_screen.dart';
 import 'package:spendwise/pages/about_page.dart';
 import 'package:spendwise/providers/locale_provider.dart';
+import 'package:spendwise/providers/profile_provider.dart';
 import 'package:spendwise/providers/theme_provider.dart';
 import 'package:spendwise/theme/app_theme.dart';
 import 'package:spendwise/services/permission_service.dart';
@@ -23,9 +23,6 @@ void main() async {
 
   // Charger les variables d'environnement
   await dotenv.load(fileName: '.env');
-
-  // Initialiser Hive (pour le cache offline)
-  await Hive.initFlutter();
 
   // Initialiser Supabase
   await Supabase.initialize(
@@ -46,6 +43,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => ProfileProvider()),
       ],
       child: const FinanceApp(),
     ),

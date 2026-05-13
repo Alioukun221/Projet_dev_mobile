@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "WebSearch"
+      "WebSearch",
+      "Bash(node:*)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }

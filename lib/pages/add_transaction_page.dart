@@ -1,5 +1,6 @@
 // ignore_for_file: use_key_in_widget_constructors, use_build_context_synchronously
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/models/transaction.dart';
@@ -21,6 +22,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   String _selectedType = 'deposit';
   String? _selectedCategory;
   DateTime _selectedDate = DateTime.now();
+  late final Future<List<String>> _categoriesFuture;
 
   bool get _isDarkMode => widget.isDarkMode;
 
@@ -46,16 +48,14 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   @override
   void initState() {
     super.initState();
-    _initializeSelectedCategory();
-  }
-
-  void _initializeSelectedCategory() async {
-    final categories = await SupabaseDataService().getAllCategoryNames();
-    if (categories.isNotEmpty && mounted) {
-      setState(() {
-        _selectedCategory = categories.first;
+    _categoriesFuture = SupabaseDataService().getAllCategoryNames()
+      ..then((categories) {
+        if (categories.isNotEmpty && mounted) {
+          setState(() => _selectedCategory = categories.first);
+        }
+      }).catchError((e) {
+        debugPrint('AddTransactionPage.initCategories: $e');
       });
-    }
   }
 
   @override
@@ -352,10 +352,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   // ===================== Category Dropdown =====================
 
   Widget _buildCategoryDropdown(BuildContext context) {
-    return StreamBuilder<List<String>>(
-      stream: Stream.fromFuture(
-        SupabaseDataService().getAllCategoryNames(),
-      ),
+    return FutureBuilder<List<String>>(
+      future: _categoriesFuture,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());

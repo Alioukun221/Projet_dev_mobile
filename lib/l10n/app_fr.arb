@@ -158,5 +158,21 @@
     "noPendingTransactions": "Aucune transaction en attente",
     "approveTransaction": "Approuver",
     "rejectTransaction": "Rejeter",
-    "approveAll": "Tout approuver"
+    "approveAll": "Tout approuver",
+
+    "todos": "Tâches",
+    "newTodo": "Nouvelle tâche",
+    "addTodo": "Programmer une tâche",
+    "editTodo": "Modifier la tâche",
+    "noTodos": "Aucune tâche programmée",
+    "createFirstTodo": "Programmez vos dépenses et revenus à l'avance.",
+    "dueDate": "Date d'échéance",
+    "recurrence": "Récurrence",
+    "recurrenceNone": "Aucune",
+    "recurrenceWeekly": "Hebdo",
+    "recurrenceMonthly": "Mensuel",
+    "markAsDone": "Marquer fait",
+    "confirmComplete": "Confirmer la complétion",
+    "overdueTasks": "En retard",
+    "todayTasks": "Aujourd'hui"
 }

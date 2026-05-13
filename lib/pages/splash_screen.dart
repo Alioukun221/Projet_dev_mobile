@@ -5,11 +5,12 @@ import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/pages/auth/welcome_page.dart';
 import 'package:spendwise/pages/home_page.dart';
 import 'package:spendwise/providers/locale_provider.dart';
+import 'package:spendwise/providers/profile_provider.dart';
 import 'package:spendwise/providers/theme_provider.dart';
 import 'package:spendwise/services/auth_service.dart';
-import 'package:spendwise/services/data_migration_service.dart';
 import 'package:spendwise/services/notification_transaction_service.dart';
 import 'package:spendwise/services/supabase_data_service.dart';
+import 'package:spendwise/services/todo_notification_service.dart';
 import 'package:spendwise/theme/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -52,23 +53,23 @@ class _SplashScreenState extends State<SplashScreen>
     final isLoggedIn = AuthService().isLoggedIn;
 
     if (isLoggedIn) {
-      // Run data migration (Hive → Supabase, one-time)
-      try {
-        await DataMigrationService().migrate();
-      } catch (_) {}
-
       // Initialize Supabase data service
       await SupabaseDataService().init();
 
       // Initialize notification listening service
       await NotificationTransactionService().init();
 
-      // Load user preferences (theme + locale)
+      // Initialize todo notification service and reschedule all reminders
+      final todos = await SupabaseDataService().getTodos();
+      await TodoNotificationService().init();
+      await TodoNotificationService().rescheduleAll(todos);
+
+      // Load user preferences — single getProfile() call for all providers
+      final profileData = await AuthService().getProfile();
       if (mounted) {
-        await Provider.of<ThemeProvider>(context, listen: false)
-            .loadFromProfile();
-        await Provider.of<LocaleProvider>(context, listen: false)
-            .loadFromProfile();
+        Provider.of<ProfileProvider>(context, listen: false).applyFromData(profileData);
+        Provider.of<ThemeProvider>(context, listen: false).applyFromData(profileData);
+        Provider.of<LocaleProvider>(context, listen: false).applyFromData(profileData);
       }
     }
 

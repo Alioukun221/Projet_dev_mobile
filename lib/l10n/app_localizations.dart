@@ -1032,6 +1032,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Approve all'**
   String get approveAll;
+
+  /// No description provided for @todos.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get todos;
+
+  /// No description provided for @newTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'New Task'**
+  String get newTodo;
+
+  /// No description provided for @addTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule a Task'**
+  String get addTodo;
+
+  /// No description provided for @editTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Task'**
+  String get editTodo;
+
+  /// No description provided for @noTodos.
+  ///
+  /// In en, this message translates to:
+  /// **'No scheduled tasks'**
+  String get noTodos;
+
+  /// No description provided for @createFirstTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule your expenses and income in advance.'**
+  String get createFirstTodo;
+
+  /// No description provided for @dueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Due Date'**
+  String get dueDate;
+
+  /// No description provided for @recurrence.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurrence'**
+  String get recurrence;
+
+  /// No description provided for @recurrenceNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get recurrenceNone;
+
+  /// No description provided for @recurrenceWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get recurrenceWeekly;
+
+  /// No description provided for @recurrenceMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get recurrenceMonthly;
+
+  /// No description provided for @markAsDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as Done'**
+  String get markAsDone;
+
+  /// No description provided for @confirmComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Completion'**
+  String get confirmComplete;
+
+  /// No description provided for @overdueTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get overdueTasks;
+
+  /// No description provided for @todayTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get todayTasks;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

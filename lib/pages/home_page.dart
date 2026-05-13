@@ -6,14 +6,15 @@ import 'package:spendwise/pages/dashboard_page.dart';
 import 'package:spendwise/pages/about_page.dart';
 import 'package:spendwise/pages/planning_page.dart';
 import 'package:spendwise/pages/profile_page.dart';
-import 'package:spendwise/models/profile.dart';
 import 'package:spendwise/pages/statistics_page.dart';
+import 'package:spendwise/pages/todo_page.dart';
 import 'package:spendwise/pages/transactions_page.dart';
 import 'package:spendwise/pages/categories_page.dart';
 import 'package:spendwise/pages/notification_settings_page.dart';
 import 'package:spendwise/pages/pending_transactions_page.dart';
 import 'package:spendwise/pages/auth/welcome_page.dart';
 import 'package:spendwise/providers/locale_provider.dart';
+import 'package:spendwise/providers/profile_provider.dart';
 import 'package:spendwise/providers/theme_provider.dart';
 import 'package:spendwise/services/auth_service.dart';
 import 'package:spendwise/services/notification_transaction_service.dart';
@@ -31,26 +32,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   bool _isDarkMode = false;
-  Profile? _profile;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProfile();
-  }
-
-  Future<void> _loadProfile() async {
-    final data = await AuthService().getProfile();
-    if (data != null && mounted) {
-      setState(() => _profile = Profile.fromJson(data));
-    }
-  }
 
   final List<Widget> _pages = [
     const DashboardPage(),
     TransactionsPage(),
-    PlanningPage(),
     const StatisticsPage(),
+    const TodoPage(),
   ];
 
   @override
@@ -92,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   PreferredSizeWidget _buildAppBar(
       Color textColor, Color subtextColor, Color cardColor) {
+    final profileProvider = Provider.of<ProfileProvider>(context);
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -106,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () => Scaffold.of(context).openDrawer(),
               child: Builder(builder: (_) {
                 final avatar = ProfilePage.getAvatarById(
-                  _profile?.avatar ?? 'avatar_1',
+                  profileProvider.profile?.avatar ?? 'avatar_1',
                 );
                 return Container(
                   width: 46,
@@ -142,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    _profile?.displayName ?? 'SpendWise',
+                    profileProvider.profile?.displayName ?? 'SpendWise',
                     style: TextStyle(
                       fontSize: 19,
                       fontWeight: FontWeight.w800,
@@ -167,10 +155,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
               child: StreamBuilder<int>(
-                stream:
-                    NotificationTransactionService().pendingCountStream,
-                initialData:
-                    NotificationTransactionService().pendingCount,
+                stream: NotificationTransactionService().pendingCountStream,
+                initialData: NotificationTransactionService().pendingCount,
                 builder: (context, snapshot) {
                   final count = snapshot.data ?? 0;
                   return Container(
@@ -231,6 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
       Color bg, Color cardColor, Color textColor, Color subtextColor) {
     final borderColor =
         _isDarkMode ? AppTheme.darkBorderColor : Colors.black.withOpacity(0.06);
+    final profileProvider = Provider.of<ProfileProvider>(context);
     final localeProvider = Provider.of<LocaleProvider>(context);
 
     return Drawer(
@@ -250,7 +237,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   MaterialPageRoute(
                     builder: (_) => ProfilePage(isDarkMode: _isDarkMode),
                   ),
-                ).then((_) => _loadProfile());
+                );
               },
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
@@ -258,7 +245,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Builder(builder: (_) {
                       final avatar = ProfilePage.getAvatarById(
-                        _profile?.avatar ?? 'avatar_1',
+                        profileProvider.profile?.avatar ?? 'avatar_1',
                       );
                       return Container(
                         width: 52,
@@ -292,7 +279,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _profile?.displayName ?? 'SpendWise',
+                            profileProvider.profile?.displayName ?? 'SpendWise',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
@@ -304,7 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            _profile?.email ?? 'v1.0.0',
+                            profileProvider.profile?.email ?? '',
                             style: TextStyle(
                               fontSize: 12,
                               color: subtextColor,
@@ -329,6 +316,19 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 8),
 
             // Navigation items
+            _buildDrawerItem(
+              icon: Icons.calendar_month_rounded,
+              label: AppLocalizations.of(context)!.planning,
+              textColor: textColor,
+              subtextColor: subtextColor,
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => PlanningPage()),
+                );
+              },
+            ),
             _buildDrawerItem(
               icon: Icons.category_rounded,
               label: AppLocalizations.of(context)!.categories,
@@ -533,6 +533,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () async {
                   Navigator.pop(context); // close drawer
                   SupabaseDataService().reset();
+                  Provider.of<ProfileProvider>(context, listen: false).clear();
                   await AuthService().signOut();
                   if (!mounted) return;
                   Navigator.pushAndRemoveUntil(
@@ -608,22 +609,22 @@ class _HomeScreenState extends State<HomeScreen> {
       AppLocalizations.of(context)!.home,
       AppLocalizations.of(context)!.transactions,
       '', // placeholder for FAB
-      AppLocalizations.of(context)!.planning,
       AppLocalizations.of(context)!.statistic,
+      AppLocalizations.of(context)!.todos,
     ];
     final icons = [
       Icons.dashboard_rounded,
       Icons.receipt_long_rounded,
       Icons.add, // placeholder
-      Icons.calendar_month_rounded,
       Icons.analytics_rounded,
+      Icons.checklist_rounded,
     ];
     final outlinedIcons = [
       Icons.dashboard_outlined,
       Icons.receipt_long_outlined,
       Icons.add, // placeholder
-      Icons.calendar_month_outlined,
       Icons.analytics_outlined,
+      Icons.checklist_rounded,
     ];
 
     // Map _selectedIndex (0-3) to nav index (0,1,3,4) — index 2 is the FAB gap

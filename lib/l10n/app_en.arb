@@ -158,5 +158,21 @@
     "noPendingTransactions": "No pending transactions",
     "approveTransaction": "Approve",
     "rejectTransaction": "Reject",
-    "approveAll": "Approve all"
+    "approveAll": "Approve all",
+
+    "todos": "Tasks",
+    "newTodo": "New Task",
+    "addTodo": "Schedule a Task",
+    "editTodo": "Edit Task",
+    "noTodos": "No scheduled tasks",
+    "createFirstTodo": "Schedule your expenses and income in advance.",
+    "dueDate": "Due Date",
+    "recurrence": "Recurrence",
+    "recurrenceNone": "None",
+    "recurrenceWeekly": "Weekly",
+    "recurrenceMonthly": "Monthly",
+    "markAsDone": "Mark as Done",
+    "confirmComplete": "Confirm Completion",
+    "overdueTasks": "Overdue",
+    "todayTasks": "Today"
 }

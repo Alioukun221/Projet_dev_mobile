@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:spendwise/services/auth_service.dart';
 
@@ -6,18 +7,21 @@ class LocaleProvider extends ChangeNotifier {
 
   Locale get locale => _locale;
 
+  void applyFromData(Map<String, dynamic>? data) {
+    if (data == null) return;
+    final localeCode = data['preferred_locale'] as String? ?? 'fr';
+    final newLocale = Locale(localeCode);
+    if (L10n.supportedLocales.contains(newLocale)) {
+      _locale = newLocale;
+      notifyListeners();
+    }
+  }
+
   Future<void> loadFromProfile() async {
     try {
-      final profile = await AuthService().getProfile();
-      if (profile != null) {
-        final localeCode = profile['preferred_locale'] as String? ?? 'fr';
-        final newLocale = Locale(localeCode);
-        if (L10n.supportedLocales.contains(newLocale)) {
-          _locale = newLocale;
-          notifyListeners();
-        }
-      }
-    } catch (_) {}
+      final data = await AuthService().getProfile();
+      applyFromData(data);
+    } catch (e) { debugPrint('LocaleProvider.loadFromProfile: $e'); }
   }
 
   Future<void> setLocale(Locale locale) async {
@@ -28,7 +32,7 @@ class LocaleProvider extends ChangeNotifier {
       await AuthService().updateProfile(
         preferredLocale: locale.languageCode,
       );
-    } catch (_) {}
+    } catch (e) { debugPrint('LocaleProvider.setLocale: $e'); }
   }
 }
 

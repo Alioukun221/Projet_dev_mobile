@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
+import 'package:flutter/foundation.dart';
 import 'package:notification_listener_service/notification_event.dart';
 import 'package:notification_listener_service/notification_listener_service.dart';
 import 'package:spendwise/models/parsed_transaction.dart';
@@ -169,8 +170,8 @@ class NotificationTransactionService {
           );
           await SupabaseDataService().addTransaction(transaction);
           approved.add(pending.id);
-        } catch (_) {
-          // On saute les transactions qui échouent, les autres continuent
+        } catch (e) {
+          debugPrint('NotificationTransactionService.approveAll: $e');
         }
       }
 
@@ -226,7 +227,7 @@ class NotificationTransactionService {
   }
 
   void dispose() {
-    _notificationSub?.cancel();
+    stopListening();
     _pendingCountController.close();
   }
 }

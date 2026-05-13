@@ -34,7 +34,10 @@ class _PendingTransactionsPageState extends State<PendingTransactionsPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return Scaffold(
+    return StreamBuilder<int>(
+      stream: _service.pendingCountStream,
+      initialData: _service.pendingCount,
+      builder: (context, _) => Scaffold(
       backgroundColor: _bgColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -70,7 +73,7 @@ class _PendingTransactionsPageState extends State<PendingTransactionsPage> {
         ],
       ),
       body: _buildBody(l10n),
-    );
+    ));
   }
 
   Widget _buildBody(AppLocalizations l10n) {
@@ -145,9 +148,9 @@ class _PendingTransactionsPageState extends State<PendingTransactionsPage> {
           } else {
             _service.rejectPending(tx.id);
           }
-          if (mounted) setState(() {});
           return true; // laisse le widget disparaître visuellement
-        } catch (_) {
+        } catch (e) {
+          debugPrint('PendingTransactionsPage.confirmDismiss: $e');
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -232,7 +235,6 @@ class _PendingTransactionsPageState extends State<PendingTransactionsPage> {
 
   Future<void> _approveAll() async {
     await _service.approveAll();
-    if (mounted) setState(() {});
   }
 
   IconData _sourceIcon(String source) {
