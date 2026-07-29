@@ -272,6 +272,8 @@ android/
   build.gradle            Fallback namespace pour vieux plugins Android
 ```
 
+Reference technique detaillee (fichier par fichier, classe par classe, fonction par fonction) : [FUNCTIONS.md](FUNCTIONS.md).
+
 ## Notes Android
 
 Le plugin `telephony` est ancien et ne declare pas de `namespace` Android. Le projet applique un fallback dans `android/build.gradle` pour rester compatible avec les versions recentes d'AGP.
