@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
-import 'package:spendwise/config/supabase_config.dart';
+import 'package:spendwise/config/app_config.dart';
 import 'package:spendwise/pages/splash_screen.dart';
 import 'package:spendwise/pages/about_page.dart';
 import 'package:spendwise/providers/locale_provider.dart';
 import 'package:spendwise/providers/profile_provider.dart';
 import 'package:spendwise/providers/theme_provider.dart';
 import 'package:spendwise/theme/app_theme.dart';
-import 'package:spendwise/services/permission_service.dart';
 import 'package:spendwise/services/connectivity_service.dart';
 import 'package:spendwise/services/local_cache_service.dart';
 import 'package:provider/provider.dart';
@@ -20,23 +18,24 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Charger les variables d'environnement
-  await dotenv.load(fileName: '.env');
+  AppConfig.debugEnvironment();
 
   // Initialiser Supabase
+  if (!AppConfig.isConfigured) {
+    throw StateError(
+      'Supabase is not configured. Pass SUPABASE_URL and '
+      'SUPABASE_ANON_KEY or SUPABASE_PUBLISHABLE_KEY with --dart-define.',
+    );
+  }
+
   await Supabase.initialize(
-    url: SupabaseConfig.supabaseUrl,
-    anonKey: SupabaseConfig.supabaseAnonKey,
+    url: AppConfig.supabaseUrl,
+    anonKey: AppConfig.supabaseAnonKey,
   );
 
   // Initialiser les services offline
   await ConnectivityService.instance.init();
   await LocalCacheService.instance.init();
-
-  // Initialiser les permissions
-  final permissionService = PermissionService();
-  await permissionService.requestAllPermissions();
 
   runApp(
     MultiProvider(
@@ -83,14 +82,22 @@ class FinanceApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeProvider.themeMode,
+      builder: (context, child) {
+        final mq = MediaQuery.of(context);
+        return MediaQuery(
+          data: mq.copyWith(
+            textScaler: mq.textScaler.clamp(
+              minScaleFactor: 1.0,
+              maxScaleFactor: 1.2,
+            ),
+          ),
+          child: child!,
+        );
+      },
       home: const SplashScreen(),
       routes: {
-        '/categories': (context) => const CategoriesPage(
-              isDarkMode: true,
-            ),
-        '/settings': (context) => const AboutPage(
-              isDarkMode: false,
-            ),
+        '/categories': (context) => const CategoriesPage(),
+        '/settings': (context) => const AboutPage(),
       },
     );
   }

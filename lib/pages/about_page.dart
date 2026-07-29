@@ -1,38 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:spendwise/constants/app_colors.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:spendwise/theme/app_theme.dart';
 
-class AboutPage extends StatefulWidget {
-  final bool isDarkMode;
-  const AboutPage({super.key, required this.isDarkMode});
-
-  @override
-  State<AboutPage> createState() => _AboutPageState();
-}
-
-class _AboutPageState extends State<AboutPage> {
-  bool get _isDarkMode => widget.isDarkMode;
-
-  // Design system colors
-  Color get _bgColor =>
-      _isDarkMode ? AppTheme.darkBgColor : const Color(0xFFF7F8FC);
-  Color get _cardColor =>
-      _isDarkMode ? AppTheme.darkCardColor : Colors.white;
-  Color get _textPrimary =>
-      _isDarkMode ? Colors.white : const Color(0xFF1A1D29);
-  Color get _textSecondary =>
-      _isDarkMode ? AppTheme.darkTextSecondaryColor : const Color(0xFF6B7280);
-  Color get _borderColor => _isDarkMode
-      ? AppTheme.darkBorderColor
-      : Colors.black.withOpacity(0.04);
+class AboutPage extends StatelessWidget {
+  const AboutPage({super.key});
 
   static const Color _primaryBlue = Color(0xFF005EFF);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bgColor,
+      backgroundColor: context.appBgColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leading: Padding(
@@ -42,16 +21,17 @@ class _AboutPageState extends State<AboutPage> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: _cardColor,
+                color: context.appCardColor,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _borderColor),
+                border: Border.all(color: context.appBorderColor),
               ),
               child: IconButton(
                 padding: EdgeInsets.zero,
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
                 icon: Icon(
-                  Icons.arrow_back_ios_new,
+                  Icons.arrow_back_ios_rounded,
                   size: 18,
-                  color: _textPrimary,
+                  color: context.appTextPrimary,
                 ),
                 onPressed: () => Navigator.of(context).pop(),
               ),
@@ -63,7 +43,7 @@ class _AboutPageState extends State<AboutPage> {
         title: Text(
           AppLocalizations.of(context)!.about,
           style: TextStyle(
-            color: _textPrimary,
+            color: context.appTextPrimary,
             fontSize: 20,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.3,
@@ -84,11 +64,6 @@ class _AboutPageState extends State<AboutPage> {
                     width: 100,
                     height: 100,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [_primaryBlue, Color(0xFF3B82F6)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
                       borderRadius: BorderRadius.circular(28),
                       boxShadow: [
                         BoxShadow(
@@ -98,10 +73,14 @@ class _AboutPageState extends State<AboutPage> {
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.account_balance_wallet,
-                      size: 48,
-                      color: Colors.white,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(28),
+                      child: Image.asset(
+                        'assets/images/new_logo.png',
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -110,7 +89,7 @@ class _AboutPageState extends State<AboutPage> {
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
-                      color: _textPrimary,
+                      color: context.appTextPrimary,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -144,7 +123,7 @@ class _AboutPageState extends State<AboutPage> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: _textPrimary,
+                color: context.appTextPrimary,
                 letterSpacing: -0.3,
               ),
             ),
@@ -154,7 +133,7 @@ class _AboutPageState extends State<AboutPage> {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w400,
-                color: _textSecondary,
+                color: context.appTextSecondary,
                 height: 1.5,
               ),
             ),
@@ -166,57 +145,82 @@ class _AboutPageState extends State<AboutPage> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: _textPrimary,
+                color: context.appTextPrimary,
                 letterSpacing: -0.3,
               ),
             ),
             const SizedBox(height: 12),
-            _buildFeatureItem(
+            _buildFeatureItem(context,
                 icon: Icons.add_circle_outline,
                 title:
                     AppLocalizations.of(context)!.featureTransactionManagement,
                 description: AppLocalizations.of(context)!
                     .featureTransactionDescription),
-            _buildFeatureItem(
+            _buildFeatureItem(context,
                 icon: Icons.dashboard_outlined,
                 title: AppLocalizations.of(context)!.featureDashboard,
                 description:
                     AppLocalizations.of(context)!.featureDashboardDescription),
-            _buildFeatureItem(
+            _buildFeatureItem(context,
                 icon: Icons.category_outlined,
                 title: AppLocalizations.of(context)!.featureCategoryManagement,
                 description:
                     AppLocalizations.of(context)!.featureCategoryDescription),
             _buildFeatureItem(
+              context,
               icon: Icons.account_balance_wallet_outlined,
               title: AppLocalizations.of(context)!.featureBudgets,
               description:
                   AppLocalizations.of(context)!.featureBudgetsDescription,
             ),
-            _buildFeatureItem(
+            _buildFeatureItem(context,
                 icon: Icons.bar_chart_outlined,
                 title: AppLocalizations.of(context)!.featureStatistics,
                 description:
                     AppLocalizations.of(context)!.featureStatisticsDescription),
             _buildFeatureItem(
+              context,
               icon: Icons.calendar_today_outlined,
               title: AppLocalizations.of(context)!.featureDateFilters,
               description:
                   AppLocalizations.of(context)!.featureDateFiltersDescription,
             ),
 
-            _buildFeatureItem(
+            _buildFeatureItem(context,
                 icon: Icons.storage_outlined,
                 title: AppLocalizations.of(context)!.featureLocalStorage,
                 description: AppLocalizations.of(context)!
                     .featureLocalStorageDescription),
             _buildFeatureItem(
+              context,
+              icon: Icons.wifi_off_rounded,
+              title: AppLocalizations.of(context)!.featureOfflineSync,
+              description:
+                  AppLocalizations.of(context)!.featureOfflineSyncDescription,
+            ),
+            _buildFeatureItem(
+              context,
+              icon: Icons.task_alt_rounded,
+              title: AppLocalizations.of(context)!.featureTodos,
+              description:
+                  AppLocalizations.of(context)!.featureTodosDescription,
+            ),
+            _buildFeatureItem(
+              context,
+              icon: Icons.sms_outlined,
+              title: AppLocalizations.of(context)!.featureNotifSms,
+              description:
+                  AppLocalizations.of(context)!.featureNotifSmsDescription,
+            ),
+            _buildFeatureItem(
+              context,
               icon: Icons.dark_mode_outlined,
               title: AppLocalizations.of(context)!.featureTheme,
               description:
                   AppLocalizations.of(context)!.featureThemeDescription,
             ),
             _buildFeatureItem(
+              context,
               icon: Icons.language,
               title: AppLocalizations.of(context)!.featureLanguage,
               description:
@@ -231,7 +235,7 @@ class _AboutPageState extends State<AboutPage> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: _textPrimary,
+                color: context.appTextPrimary,
                 letterSpacing: -0.3,
               ),
             ),
@@ -239,9 +243,9 @@ class _AboutPageState extends State<AboutPage> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: _cardColor,
+                color: context.appCardColor,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: _borderColor),
+                border: Border.all(color: context.appBorderColor),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.03),
@@ -278,7 +282,7 @@ class _AboutPageState extends State<AboutPage> {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: _textPrimary,
+                                color: context.appTextPrimary,
                                 letterSpacing: -0.2,
                               ),
                             ),
@@ -288,7 +292,7 @@ class _AboutPageState extends State<AboutPage> {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w400,
-                                color: _textSecondary,
+                                color: context.appTextSecondary,
                               ),
                             ),
                           ],
@@ -297,7 +301,7 @@ class _AboutPageState extends State<AboutPage> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  Divider(color: _borderColor, height: 1),
+                  Divider(color: context.appBorderColor, height: 1),
                   const SizedBox(height: 16),
                   InkWell(
                     borderRadius: BorderRadius.circular(10),
@@ -393,7 +397,7 @@ class _AboutPageState extends State<AboutPage> {
                 AppLocalizations.of(context)!.copyright,
                 style: TextStyle(
                   fontSize: 13,
-                  color: _textSecondary,
+                  color: context.appTextSecondary,
                 ),
               ),
             ),
@@ -403,7 +407,8 @@ class _AboutPageState extends State<AboutPage> {
     );
   }
 
-  Widget _buildFeatureItem({
+  Widget _buildFeatureItem(
+    BuildContext context, {
     required IconData icon,
     required String title,
     required String description,
@@ -412,9 +417,9 @@ class _AboutPageState extends State<AboutPage> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: context.appCardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _borderColor),
+        border: Border.all(color: context.appBorderColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
@@ -448,7 +453,7 @@ class _AboutPageState extends State<AboutPage> {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: _textPrimary,
+                    color: context.appTextPrimary,
                     letterSpacing: -0.2,
                   ),
                 ),
@@ -457,7 +462,7 @@ class _AboutPageState extends State<AboutPage> {
                   description,
                   style: TextStyle(
                     fontSize: 13,
-                    color: _textSecondary,
+                    color: context.appTextSecondary,
                     height: 1.4,
                   ),
                 ),

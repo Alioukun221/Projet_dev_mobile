@@ -1,13 +1,15 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/models/category.dart' as models;
 import 'package:spendwise/models/todo_task.dart';
 import 'package:spendwise/services/supabase_data_service.dart';
 import 'package:spendwise/services/todo_notification_service.dart';
+import 'package:spendwise/constants/app_colors.dart';
 import 'package:spendwise/theme/app_theme.dart';
+import 'package:spendwise/utils/app_format.dart' as app_fmt;
+import 'package:spendwise/widgets/app_empty_state.dart';
 
 class TodoPage extends StatefulWidget {
   const TodoPage({super.key});
@@ -22,23 +24,11 @@ class _TodoPageState extends State<TodoPage> {
   static const _orange = Color(0xFFF97316);
   static const _primaryBlue = Color(0xFF005EFF);
 
-  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+  String _formatAmount(BuildContext context, double amount) =>
+      app_fmt.formatMoney(context, amount, withCurrency: false);
 
-  Color get _bg => _isDark ? AppTheme.darkBgColor : const Color(0xFFF7F8FC);
-  Color get _card => _isDark ? AppTheme.darkCardColor : Colors.white;
-  Color get _textPrimary => _isDark ? Colors.white : const Color(0xFF1A1D29);
-  Color get _textSecondary =>
-      _isDark ? AppTheme.darkTextSecondaryColor : const Color(0xFF6B7280);
-  Color get _border =>
-      _isDark ? AppTheme.darkBorderColor : Colors.black.withOpacity(0.06);
-  Color get _inputFill =>
-      _isDark ? Colors.white.withOpacity(0.06) : const Color(0xFFF1F3F8);
-
-  String _formatAmount(double amount) =>
-      NumberFormat('#,##0', 'fr').format(amount);
-
-  String _formatDate(DateTime date) =>
-      DateFormat('dd/MM/yyyy HH:mm').format(date);
+  String _formatDate(BuildContext context, DateTime date) =>
+      app_fmt.formatDate(context, 'dd/MM/yyyy HH:mm', date);
 
   // ============ BUILD ============
 
@@ -51,6 +41,9 @@ class _TodoPageState extends State<TodoPage> {
         StreamBuilder<List<TodoTask>>(
           stream: SupabaseDataService().todosStream,
           builder: (context, snapshot) {
+            if (!SupabaseDataService().isFirstLoadComplete) {
+              return const Center(child: CircularProgressIndicator());
+            }
             final todos = snapshot.data ?? [];
             if (todos.isEmpty) {
               return _buildEmptyState(l10n);
@@ -59,33 +52,40 @@ class _TodoPageState extends State<TodoPage> {
           },
         ),
         // Floating add button
-        Positioned(
-          right: 20,
-          bottom: 100,
-          child: GestureDetector(
-            onTap: () => _showAddEditSheet(context),
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF005EFF), Color(0xFF008CFF)],
-                ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.4),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
+        StreamBuilder<List<TodoTask>>(
+          stream: SupabaseDataService().todosStream,
+          builder: (context, snapshot) {
+            final todos = snapshot.data ?? [];
+            if (todos.isEmpty) return const SizedBox.shrink();
+            return Positioned(
+              right: 20,
+              bottom: 100,
+              child: GestureDetector(
+                onTap: () => _showAddEditSheet(context),
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF005EFF), Color(0xFF008CFF)],
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryColor.withOpacity(0.4),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
-                ],
+                  child: const Icon(Icons.add_rounded,
+                      color: Colors.white, size: 26),
+                ),
               ),
-              child:
-                  const Icon(Icons.add_rounded, color: Colors.white, size: 26),
-            ),
-          ),
+            );
+          },
         ),
       ],
     );
@@ -123,11 +123,11 @@ class _TodoPageState extends State<TodoPage> {
           ...dueToday.map((t) => _buildTodoItem(t, l10n)),
         ],
         if (thisWeek.isNotEmpty) ...[
-          _buildSectionHeader('Cette semaine', _primaryBlue),
+          _buildSectionHeader(l10n.thisWeekTasks, _primaryBlue),
           ...thisWeek.map((t) => _buildTodoItem(t, l10n)),
         ],
         if (later.isNotEmpty) ...[
-          _buildSectionHeader('Plus tard', _textSecondary),
+          _buildSectionHeader(l10n.laterTasks, context.appTextSecondary),
           ...later.map((t) => _buildTodoItem(t, l10n)),
         ],
       ],
@@ -184,21 +184,23 @@ class _TodoPageState extends State<TodoPage> {
       confirmDismiss: (_) => showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
-          backgroundColor: _card,
+          backgroundColor: context.appCardColor,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Text(
             l10n.deleteConfirmationTitle,
-            style: TextStyle(color: _textPrimary, fontWeight: FontWeight.w700),
+            style: TextStyle(
+                color: context.appTextPrimary, fontWeight: FontWeight.w700),
           ),
           content: Text(
-            'Supprimer "${todo.title}" ?',
-            style: TextStyle(color: _textSecondary),
+            l10n.deleteTodoContent(todo.title),
+            style: TextStyle(color: context.appTextSecondary),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: Text(l10n.cancel, style: TextStyle(color: _textSecondary)),
+              child: Text(l10n.cancel,
+                  style: TextStyle(color: context.appTextSecondary)),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
@@ -219,12 +221,12 @@ class _TodoPageState extends State<TodoPage> {
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: _card,
+            color: context.appCardColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _border),
+            border: Border.all(color: context.appBorderColor),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(_isDark ? 0.15 : 0.04),
+                color: Colors.black.withOpacity(context.isDark ? 0.15 : 0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -270,7 +272,7 @@ class _TodoPageState extends State<TodoPage> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: _textPrimary,
+                        color: context.appTextPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -279,13 +281,15 @@ class _TodoPageState extends State<TodoPage> {
                     Row(
                       children: [
                         Icon(Icons.schedule_rounded,
-                            size: 12, color: _textSecondary),
+                            size: 12, color: context.appTextSecondary),
                         const SizedBox(width: 4),
                         Text(
-                          _formatDate(todo.dueDate),
+                          _formatDate(context, todo.dueDate),
                           style: TextStyle(
                             fontSize: 11,
-                            color: todo.isOverdue ? _red : _textSecondary,
+                            color: todo.isOverdue
+                                ? _red
+                                : context.appTextSecondary,
                           ),
                         ),
                         if (todo.categoryName != null) ...[
@@ -293,7 +297,7 @@ class _TodoPageState extends State<TodoPage> {
                           Text('• ${todo.categoryName}',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: _textSecondary,
+                                color: context.appTextSecondary,
                               )),
                         ],
                       ],
@@ -307,7 +311,7 @@ class _TodoPageState extends State<TodoPage> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '${todo.isDeposit ? "+" : "-"} ${_formatAmount(todo.amount)}',
+                    '${todo.isDeposit ? "+" : "-"} ${_formatAmount(context, todo.amount)}',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -324,7 +328,9 @@ class _TodoPageState extends State<TodoPage> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        todo.recurrence == 'weekly' ? 'Hebdo' : 'Mensuel',
+                        todo.recurrence == 'weekly'
+                            ? l10n.recurrenceWeekly
+                            : l10n.recurrenceMonthly,
                         style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
@@ -343,63 +349,24 @@ class _TodoPageState extends State<TodoPage> {
   }
 
   Widget _buildEmptyState(AppLocalizations l10n) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.08),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.checklist_rounded,
-                size: 40,
-                color: AppTheme.primaryColor,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              l10n.noTodos,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: _textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.createFirstTodo,
-              style: TextStyle(
-                fontSize: 14,
-                color: _textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () => _showAddEditSheet(context),
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: Text(l10n.addTodo),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                textStyle: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ),
-              ),
-            ),
-          ],
+    return AppEmptyState(
+      icon: Icons.checklist_rounded,
+      title: l10n.noTodos,
+      subtitle: l10n.createFirstTodo,
+      iconColor: AppTheme.primaryColor,
+      iconBgColor: AppTheme.primaryColor.withOpacity(0.08),
+      action: ElevatedButton.icon(
+        onPressed: () => _showAddEditSheet(context),
+        icon: const Icon(Icons.add_rounded, size: 18),
+        label: Text(l10n.addTodo),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTheme.primaryColor,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
         ),
       ),
     );
@@ -413,11 +380,11 @@ class _TodoPageState extends State<TodoPage> {
     AppLocalizations l10n,
   ) async {
     // Capture theme values synchronously — never call Theme.of(context) inside builders
-    final card = _card;
-    final textPrimary = _textPrimary;
-    final textSecondary = _textSecondary;
-    final inputFill = _inputFill;
-    final border = _border;
+    final card = context.appCardColor;
+    final textPrimary = context.appTextPrimary;
+    final textSecondary = context.appTextSecondary;
+    final inputFill = context.appInputFill;
+    final border = context.appBorderColor;
 
     final amountController =
         TextEditingController(text: todo.amount.toStringAsFixed(0));
@@ -501,7 +468,7 @@ class _TodoPageState extends State<TodoPage> {
         ],
       ),
     );
-    amountController.dispose();
+    Future.delayed(const Duration(milliseconds: 400), amountController.dispose);
   }
 
   // ============ BOTTOM SHEET (ADD / EDIT) ============
@@ -512,11 +479,11 @@ class _TodoPageState extends State<TodoPage> {
   }) async {
     // Capture ALL theme values synchronously before any async gap
     // — never call Theme.of(this.context) from inside a modal builder
-    final card = _card;
-    final textPrimary = _textPrimary;
-    final textSecondary = _textSecondary;
-    final border = _border;
-    final inputFill = _inputFill;
+    final card = context.appCardColor;
+    final textPrimary = context.appTextPrimary;
+    final textSecondary = context.appTextSecondary;
+    final border = context.appBorderColor;
+    final inputFill = context.appInputFill;
     final l10n = AppLocalizations.of(context)!;
     final isEdit = existing != null;
 
@@ -597,7 +564,9 @@ class _TodoPageState extends State<TodoPage> {
     List<models.Category> categories = [];
     try {
       categories = await SupabaseDataService().getCategories();
-    } catch (e) { debugPrint('TodoPage.getCategories: $e'); }
+    } catch (e) {
+      debugPrint('TodoPage.getCategories: $e');
+    }
 
     if (!mounted) return;
 
@@ -679,9 +648,8 @@ class _TodoPageState extends State<TodoPage> {
                         Expanded(
                           child: TextField(
                             controller: amountController,
-                            keyboardType:
-                                const TextInputType.numberWithOptions(
-                                    decimal: true),
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
                             style: TextStyle(
                                 color: textPrimary,
                                 fontWeight: FontWeight.w500),
@@ -718,211 +686,210 @@ class _TodoPageState extends State<TodoPage> {
                         ),
                       ],
                     ),
-                      const SizedBox(height: 14),
+                    const SizedBox(height: 14),
 
-                      // Category picker
-                      GestureDetector(
-                        onTap: () async {
-                          final picked = await showDialog<String>(
-                            context: context,
-                            builder: (_) => SimpleDialog(
-                              backgroundColor: card,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20)),
-                              title: Text(l10n.category,
-                                  style: TextStyle(
-                                      color: textPrimary,
-                                      fontWeight: FontWeight.w700)),
-                              children: categories
-                                  .map((c) => SimpleDialogOption(
-                                        onPressed: () =>
-                                            Navigator.pop(context, c.id),
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 4),
-                                          child: Text(c.name,
-                                              style: TextStyle(
-                                                  color: textPrimary,
-                                                  fontSize: 15)),
-                                        ),
-                                      ))
-                                  .toList(),
-                            ),
-                          );
-                          if (picked != null) {
-                            setSheetState(() => selectedCategoryId = picked);
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 18, vertical: 14),
-                          decoration: BoxDecoration(
-                            color: inputFill,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: border),
+                    // Category picker
+                    GestureDetector(
+                      onTap: () async {
+                        final picked = await showDialog<String>(
+                          context: context,
+                          builder: (_) => SimpleDialog(
+                            backgroundColor: card,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20)),
+                            title: Text(l10n.category,
+                                style: TextStyle(
+                                    color: textPrimary,
+                                    fontWeight: FontWeight.w700)),
+                            children: categories
+                                .map((c) => SimpleDialogOption(
+                                      onPressed: () =>
+                                          Navigator.pop(context, c.id),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 4),
+                                        child: Text(c.name,
+                                            style: TextStyle(
+                                                color: textPrimary,
+                                                fontSize: 15)),
+                                      ),
+                                    ))
+                                .toList(),
                           ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.category_outlined,
-                                  size: 18, color: textSecondary),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(l10n.category,
-                                        style: TextStyle(
-                                            fontSize: 11,
-                                            color: textSecondary,
-                                            fontWeight: FontWeight.w500)),
-                                    Text(
-                                      categories
-                                              .where((c) =>
-                                                  c.id == selectedCategoryId)
-                                              .firstOrNull
-                                              ?.name ??
-                                          '—',
-                                      style: TextStyle(
-                                          fontSize: 14,
-                                          color: textPrimary,
-                                          fontWeight: FontWeight.w600),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Icon(Icons.chevron_right_rounded,
-                                  size: 18, color: textSecondary),
-                            ],
-                          ),
+                        );
+                        if (picked != null) {
+                          setSheetState(() => selectedCategoryId = picked);
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 18, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: inputFill,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: border),
                         ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Due date picker
-                      GestureDetector(
-                        onTap: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: selectedDate,
-                            firstDate: DateTime.now()
-                                .subtract(const Duration(days: 365)),
-                            lastDate: DateTime.now()
-                                .add(const Duration(days: 365 * 5)),
-                          );
-                          if (picked != null) {
-                            final timePicked = await showTimePicker(
-                              context: context,
-                              initialTime: TimeOfDay.fromDateTime(selectedDate),
-                            );
-                            setSheetState(() {
-                              selectedDate = DateTime(
-                                picked.year,
-                                picked.month,
-                                picked.day,
-                                timePicked?.hour ?? selectedDate.hour,
-                                timePicked?.minute ?? selectedDate.minute,
-                              );
-                            });
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 18, vertical: 14),
-                          decoration: BoxDecoration(
-                            color: inputFill,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: border),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.calendar_today_rounded,
-                                  size: 18, color: textSecondary),
-                              const SizedBox(width: 12),
-                              Column(
+                        child: Row(
+                          children: [
+                            Icon(Icons.category_outlined,
+                                size: 18, color: textSecondary),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(l10n.dueDate,
+                                  Text(l10n.category,
                                       style: TextStyle(
                                           fontSize: 11,
                                           color: textSecondary,
                                           fontWeight: FontWeight.w500)),
-                                  Text(_formatDate(selectedDate),
-                                      style: TextStyle(
-                                          fontSize: 14,
-                                          color: textPrimary,
-                                          fontWeight: FontWeight.w600)),
+                                  Text(
+                                    categories
+                                            .where((c) =>
+                                                c.id == selectedCategoryId)
+                                            .firstOrNull
+                                            ?.name ??
+                                        '—',
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        color: textPrimary,
+                                        fontWeight: FontWeight.w600),
+                                  ),
                                 ],
                               ),
-                            ],
-                          ),
+                            ),
+                            Icon(Icons.chevron_right_rounded,
+                                size: 18, color: textSecondary),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 14),
+                    ),
+                    const SizedBox(height: 14),
 
-                      // Recurrence chips
-                      Text(l10n.recurrence,
-                          style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: textSecondary)),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          recurrenceChip(setSheetState,
-                              label: l10n.recurrenceNone,
-                              value: 'none',
-                              selected: selectedRecurrence,
-                              onTap: () => setSheetState(
-                                  () => selectedRecurrence = 'none')),
-                          const SizedBox(width: 8),
-                          recurrenceChip(setSheetState,
-                              label: l10n.recurrenceWeekly,
-                              value: 'weekly',
-                              selected: selectedRecurrence,
-                              onTap: () => setSheetState(
-                                  () => selectedRecurrence = 'weekly')),
-                          const SizedBox(width: 8),
-                          recurrenceChip(setSheetState,
-                              label: l10n.recurrenceMonthly,
-                              value: 'monthly',
-                              selected: selectedRecurrence,
-                              onTap: () => setSheetState(
-                                  () => selectedRecurrence = 'monthly')),
-                        ],
+                    // Due date picker
+                    GestureDetector(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime.now()
+                              .subtract(const Duration(days: 365)),
+                          lastDate:
+                              DateTime.now().add(const Duration(days: 365 * 5)),
+                        );
+                        if (picked != null) {
+                          final timePicked = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.fromDateTime(selectedDate),
+                          );
+                          setSheetState(() {
+                            selectedDate = DateTime(
+                              picked.year,
+                              picked.month,
+                              picked.day,
+                              timePicked?.hour ?? selectedDate.hour,
+                              timePicked?.minute ?? selectedDate.minute,
+                            );
+                          });
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 18, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: inputFill,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: border),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.calendar_today_rounded,
+                                size: 18, color: textSecondary),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(l10n.dueDate,
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: textSecondary,
+                                        fontWeight: FontWeight.w500)),
+                                Text(_formatDate(context, selectedDate),
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        color: textPrimary,
+                                        fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 24),
+                    ),
+                    const SizedBox(height: 14),
 
-                      // Save button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            // Validation manuelle — pas de Form/GlobalKey
-                            final titleVal = titleController.text.trim();
-                            final amountVal =
-                                amountController.text.replaceAll(',', '.');
-                            final parsedAmount =
-                                double.tryParse(amountVal);
+                    // Recurrence chips
+                    Text(l10n.recurrence,
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: textSecondary)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        recurrenceChip(setSheetState,
+                            label: l10n.recurrenceNone,
+                            value: 'none',
+                            selected: selectedRecurrence,
+                            onTap: () => setSheetState(
+                                () => selectedRecurrence = 'none')),
+                        const SizedBox(width: 8),
+                        recurrenceChip(setSheetState,
+                            label: l10n.recurrenceWeekly,
+                            value: 'weekly',
+                            selected: selectedRecurrence,
+                            onTap: () => setSheetState(
+                                () => selectedRecurrence = 'weekly')),
+                        const SizedBox(width: 8),
+                        recurrenceChip(setSheetState,
+                            label: l10n.recurrenceMonthly,
+                            value: 'monthly',
+                            selected: selectedRecurrence,
+                            onTap: () => setSheetState(
+                                () => selectedRecurrence = 'monthly')),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
 
-                            final newTitleError = titleVal.isEmpty
-                                ? l10n.pleaseEnterDescription
-                                : null;
-                            final newAmountError = amountVal.isEmpty
-                                ? l10n.pleaseEnterAmount
-                                : parsedAmount == null
-                                    ? l10n.pleaseEnterAmountInvalid
-                                    : null;
+                    // Save button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          // Validation manuelle — pas de Form/GlobalKey
+                          final titleVal = titleController.text.trim();
+                          final amountVal =
+                              amountController.text.replaceAll(',', '.');
+                          final parsedAmount = double.tryParse(amountVal);
 
-                            if (newTitleError != null ||
-                                newAmountError != null) {
-                              setSheetState(() {
-                                titleError = newTitleError;
-                                amountError = newAmountError;
-                              });
-                              return;
-                            }
+                          final newTitleError = titleVal.isEmpty
+                              ? l10n.pleaseEnterDescription
+                              : null;
+                          final newAmountError = amountVal.isEmpty
+                              ? l10n.pleaseEnterAmount
+                              : parsedAmount == null
+                                  ? l10n.pleaseEnterAmountInvalid
+                                  : null;
 
-                            if (context.mounted) Navigator.pop(
+                          if (newTitleError != null || newAmountError != null) {
+                            setSheetState(() {
+                              titleError = newTitleError;
+                              amountError = newAmountError;
+                            });
+                            return;
+                          }
+
+                          if (context.mounted) {
+                            Navigator.pop(
                               context,
                               TodoTask(
                                 id: existing?.id,
@@ -935,40 +902,43 @@ class _TodoPageState extends State<TodoPage> {
                                 recurrence: selectedRecurrence,
                               ),
                             );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primaryColor,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            textStyle: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                            ),
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
                           ),
-                          child: Text(l10n.save),
+                          textStyle: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
                         ),
+                        child: Text(l10n.save),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              );
+              ),
+            );
           },
         );
       },
     );
 
-    titleController.dispose();
-    amountController.dispose();
+    Future.delayed(const Duration(milliseconds: 400), () {
+      titleController.dispose();
+      amountController.dispose();
+    });
 
     // Sheet fermé — opérations async sans conflit avec le widget tree
     if (!mounted || result == null) return;
 
     if (isEdit) {
       await SupabaseDataService().updateTodo(result);
-      if (existing!.id != null) {
+      if (existing.id != null) {
         await TodoNotificationService().cancelReminder(existing.id!);
       }
       await TodoNotificationService().scheduleReminder(result);

@@ -171,18 +171,35 @@ CREATE TRIGGER on_auth_user_created
 CREATE OR REPLACE FUNCTION public.update_budget_spent()
 RETURNS TRIGGER AS $$
 BEGIN
-  UPDATE public.budgets b
-  SET spent = COALESCE((
-    SELECT SUM(t.amount)
-    FROM public.transactions t
-    WHERE t.user_id = b.user_id
-      AND t.category_id = b.category_id
-      AND t.type = 'withdrawal'
-      AND t.date >= b.start_date
-      AND t.date <= b.end_date
-  ), 0)
-  WHERE b.user_id = COALESCE(NEW.user_id, OLD.user_id)
-    AND b.category_id = COALESCE(NEW.category_id, OLD.category_id);
+  IF TG_OP IN ('UPDATE', 'DELETE') THEN
+    UPDATE public.budgets b
+    SET spent = COALESCE((
+      SELECT SUM(t.amount)
+      FROM public.transactions t
+      WHERE t.user_id = b.user_id
+        AND t.category_id IS NOT DISTINCT FROM b.category_id
+        AND t.type = 'withdrawal'
+        AND t.date >= b.start_date
+        AND t.date <= b.end_date
+    ), 0)
+    WHERE b.user_id = OLD.user_id
+      AND b.category_id IS NOT DISTINCT FROM OLD.category_id;
+  END IF;
+
+  IF TG_OP IN ('INSERT', 'UPDATE') THEN
+    UPDATE public.budgets b
+    SET spent = COALESCE((
+      SELECT SUM(t.amount)
+      FROM public.transactions t
+      WHERE t.user_id = b.user_id
+        AND t.category_id IS NOT DISTINCT FROM b.category_id
+        AND t.type = 'withdrawal'
+        AND t.date >= b.start_date
+        AND t.date <= b.end_date
+    ), 0)
+    WHERE b.user_id = NEW.user_id
+      AND b.category_id IS NOT DISTINCT FROM NEW.category_id;
+  END IF;
 
   RETURN COALESCE(NEW, OLD);
 END;

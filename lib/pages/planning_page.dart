@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:spendwise/constants/category_icons.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/models/budget.dart';
 import 'package:spendwise/services/supabase_data_service.dart';
+import 'package:spendwise/constants/app_colors.dart';
 import 'package:spendwise/theme/app_theme.dart';
+import 'package:spendwise/utils/app_format.dart';
+import 'package:spendwise/utils/user_error.dart';
+import 'package:spendwise/widgets/app_empty_state.dart';
 
 class PlanningPage extends StatefulWidget {
   const PlanningPage({super.key});
@@ -13,45 +17,11 @@ class PlanningPage extends StatefulWidget {
 }
 
 class _PlanningPageState extends State<PlanningPage> {
-  String? _selectedCategory;
-
-  // --------------- Design system helpers ---------------
-  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
-
-  Color get _cardColor =>
-      _isDark ? AppTheme.darkCardColor : Colors.white;
-
-  Color get _textPrimary =>
-      _isDark ? Colors.white : const Color(0xFF1A1D29);
-
-  Color get _textSecondary =>
-      _isDark ? AppTheme.darkTextSecondaryColor : const Color(0xFF6B7280);
-
-  Color get _border => _isDark
-      ? AppTheme.darkBorderColor
-      : Colors.black.withOpacity(0.04);
-
   static const Color _primary = Color(0xFF005EFF);
   static const Color _green = Color(0xFF22C55E);
   static const Color _red = Color(0xFFEF4444);
 
-  final NumberFormat _fmt = NumberFormat('#,###', 'fr_FR');
-
-  // --------------- Category icon map ---------------
-  final Map<String, IconData> _categoryIcons = {
-    'alimentation': Icons.restaurant_rounded,
-    'transport': Icons.directions_car_rounded,
-    'logement': Icons.home_rounded,
-    'loisirs': Icons.sports_esports_rounded,
-    'sante': Icons.favorite_rounded,
-    'santé': Icons.favorite_rounded,
-    'education': Icons.school_rounded,
-    'éducation': Icons.school_rounded,
-    'autres': Icons.more_horiz_rounded,
-  };
-
-  IconData _iconFor(String category) =>
-      _categoryIcons[category.toLowerCase()] ?? Icons.account_balance_wallet_rounded;
+  IconData _iconFor(String category) => CategoryIcons.forName(category);
 
   // --------------- Input decoration helper ---------------
   InputDecoration _inputDecoration({
@@ -60,11 +30,11 @@ class _PlanningPageState extends State<PlanningPage> {
   }) {
     return InputDecoration(
       labelText: label,
-      labelStyle: TextStyle(color: _textSecondary, fontSize: 14),
+      labelStyle: TextStyle(color: context.appTextSecondary, fontSize: 14),
       prefixText: prefix,
-      prefixStyle: TextStyle(color: _textSecondary),
+      prefixStyle: TextStyle(color: context.appTextSecondary),
       filled: true,
-      fillColor: _isDark
+      fillColor: context.isDark
           ? Colors.white.withOpacity(0.04)
           : Colors.grey.withOpacity(0.05),
       border: OutlineInputBorder(
@@ -73,7 +43,7 @@ class _PlanningPageState extends State<PlanningPage> {
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: _border),
+        borderSide: BorderSide(color: context.appBorderColor),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -96,60 +66,85 @@ class _PlanningPageState extends State<PlanningPage> {
   // =====================================================================
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<Budget>>(
-      stream: SupabaseDataService().budgetsStream,
-      builder: (context, snapshot) {
-        final budgets = snapshot.data ?? [];
-        if (budgets.isEmpty) {
-          return _buildEmptyState(context);
-        }
+    return Scaffold(
+      backgroundColor: context.appBgColor,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+          icon: const Icon(Icons.arrow_back_ios_rounded),
+          color: context.appTextPrimary,
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          AppLocalizations.of(context)!.planning,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: context.appTextPrimary,
+            letterSpacing: -0.3,
+          ),
+        ),
+      ),
+      body: StreamBuilder<List<Budget>>(
+        stream: SupabaseDataService().budgetsStream,
+        builder: (context, snapshot) {
+          final budgets = snapshot.data ?? [];
+          if (!SupabaseDataService().isFirstLoadComplete) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (budgets.isEmpty) {
+            return _buildEmptyState(context);
+          }
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Section header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.pie_chart_rounded,
-                          size: 20, color: _primary),
-                      const SizedBox(width: 8),
-                      Text(
-                        AppLocalizations.of(context)!.addPlanning,
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          color: _textPrimary,
-                          letterSpacing: -0.3,
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Section header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.pie_chart_rounded,
+                            size: 20, color: _primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          AppLocalizations.of(context)!.addPlanning,
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: context.appTextPrimary,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Material(
+                      color: _primary,
+                      borderRadius: BorderRadius.circular(12),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => _showAddBudgetDialog(context),
+                        child: const Padding(
+                          padding: EdgeInsets.all(8),
+                          child: Icon(Icons.add_rounded,
+                              color: Colors.white, size: 20),
                         ),
                       ),
-                    ],
-                  ),
-                  Material(
-                    color: _primary,
-                    borderRadius: BorderRadius.circular(12),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () => _showAddBudgetDialog(context),
-                      child: const Padding(
-                        padding: EdgeInsets.all(8),
-                        child: Icon(Icons.add_rounded,
-                            color: Colors.white, size: 20),
-                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _buildBudgetsList(budgets),
-            ],
-          ),
-        );
-      },
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildBudgetsList(budgets),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -157,91 +152,25 @@ class _PlanningPageState extends State<PlanningPage> {
   //  EMPTY STATE
   // =====================================================================
   Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Circular icon container
-            Container(
-              width: 88,
-              height: 88,
-              decoration: BoxDecoration(
-                color: _primary.withOpacity(0.08),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.account_balance_wallet_rounded,
-                size: 40,
-                color: _primary,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              AppLocalizations.of(context)!.noPlanning,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: _textPrimary,
-                letterSpacing: -0.3,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              AppLocalizations.of(context)!.createFirstPlanning,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: _textSecondary,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 28),
-            // Gradient "create" button
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                gradient: const LinearGradient(
-                  colors: [_primary, Color(0xFF3381FF)],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: _primary.withOpacity(0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () => _showAddBudgetDialog(context),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 28, vertical: 14),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.add_rounded,
-                            color: Colors.white, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          AppLocalizations.of(context)!.createPlanning,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+    final l10n = AppLocalizations.of(context)!;
+    return AppEmptyState(
+      icon: Icons.account_balance_wallet_rounded,
+      title: l10n.noPlanning,
+      subtitle: l10n.createFirstPlanning,
+      iconColor: _primary,
+      iconBgColor: _primary.withOpacity(0.08),
+      action: ElevatedButton.icon(
+        onPressed: () => _showAddBudgetDialog(context),
+        icon: const Icon(Icons.add_rounded, size: 18),
+        label: Text(l10n.createPlanning),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
         ),
       ),
     );
@@ -265,12 +194,12 @@ class _PlanningPageState extends State<PlanningPage> {
           margin: const EdgeInsets.only(bottom: 14),
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: _cardColor,
+            color: context.appCardColor,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: _border),
+            border: Border.all(color: context.appBorderColor),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(_isDark ? 0.15 : 0.04),
+                color: Colors.black.withOpacity(context.isDark ? 0.15 : 0.04),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -305,15 +234,15 @@ class _PlanningPageState extends State<PlanningPage> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: _textPrimary,
+                            color: context.appTextPrimary,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '${_fmt.format(budget.amount)} CFA',
+                          formatMoney(context, budget.amount),
                           style: TextStyle(
                             fontSize: 13,
-                            color: _textSecondary,
+                            color: context.appTextSecondary,
                           ),
                         ),
                       ],
@@ -367,47 +296,60 @@ class _PlanningPageState extends State<PlanningPage> {
 
               // Spent / Remaining row
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // Spent
-                  Row(
-                    children: [
-                      Text(
-                        '${AppLocalizations.of(context)!.spent}: ',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: _textSecondary,
+                  Flexible(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${AppLocalizations.of(context)!.spent}: ',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: context.appTextSecondary,
+                          ),
                         ),
-                      ),
-                      Text(
-                        '${_fmt.format(budget.spent)} CFA',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: _red,
+                        Flexible(
+                          child: Text(
+                            formatMoney(context, budget.spent),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: _red,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 12),
                   // Remaining
-                  Row(
-                    children: [
-                      Text(
-                        '${AppLocalizations.of(context)!.remaining}: ',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: _textSecondary,
+                  Flexible(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          '${AppLocalizations.of(context)!.remaining}: ',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: context.appTextSecondary,
+                          ),
                         ),
-                      ),
-                      Text(
-                        '${_fmt.format(budget.remaining)} CFA',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: isOver ? _red : _green,
+                        Flexible(
+                          child: Text(
+                            formatMoney(context, budget.remaining),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: isOver ? _red : _green,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -427,6 +369,8 @@ class _PlanningPageState extends State<PlanningPage> {
     final descriptionController = TextEditingController();
     DateTime startDate = DateTime.now();
     DateTime endDate = DateTime.now().add(const Duration(days: 30));
+    String? dialogCategory;
+    final categoriesFuture = SupabaseDataService().getAllCategoryNames();
 
     showDialog(
       context: context,
@@ -434,7 +378,7 @@ class _PlanningPageState extends State<PlanningPage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return Dialog(
-              backgroundColor: _cardColor,
+              backgroundColor: context.appCardColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -471,7 +415,7 @@ class _PlanningPageState extends State<PlanningPage> {
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
-                                color: _textPrimary,
+                                color: context.appTextPrimary,
                                 letterSpacing: -0.3,
                               ),
                             ),
@@ -481,9 +425,7 @@ class _PlanningPageState extends State<PlanningPage> {
 
                         // Category dropdown
                         StreamBuilder<List<String>>(
-                          stream: Stream.fromFuture(
-                            SupabaseDataService().getAllCategoryNames(),
-                          ),
+                          stream: Stream.fromFuture(categoriesFuture),
                           builder: (context, snapshot) {
                             if (!snapshot.hasData) {
                               return const Center(
@@ -544,23 +486,23 @@ class _PlanningPageState extends State<PlanningPage> {
                               );
                             }
 
-                            if (_selectedCategory != null &&
-                                !categories.contains(_selectedCategory)) {
-                              _selectedCategory = categories.first;
-                            } else if (_selectedCategory == null &&
+                            if (dialogCategory != null &&
+                                !categories.contains(dialogCategory)) {
+                              dialogCategory = categories.first;
+                            } else if (dialogCategory == null &&
                                 categories.isNotEmpty) {
-                              _selectedCategory = categories.first;
+                              dialogCategory = categories.first;
                             }
 
                             return DropdownButtonFormField<String>(
-                              value: _selectedCategory,
+                              value: dialogCategory,
                               items: categories.map((category) {
                                 return DropdownMenuItem(
                                   value: category,
                                   child: Text(
                                     category,
                                     style: TextStyle(
-                                      color: _textPrimary,
+                                      color: context.appTextPrimary,
                                       fontSize: 14,
                                     ),
                                   ),
@@ -568,18 +510,17 @@ class _PlanningPageState extends State<PlanningPage> {
                               }).toList(),
                               onChanged: (value) {
                                 if (value != null) {
-                                  setState(() {
-                                    _selectedCategory = value;
+                                  setDialogState(() {
+                                    dialogCategory = value;
                                   });
                                 }
                               },
-                              dropdownColor: _cardColor,
+                              dropdownColor: context.appCardColor,
                               decoration: _inputDecoration(
-                                label:
-                                    AppLocalizations.of(context)!.category,
+                                label: AppLocalizations.of(context)!.category,
                               ),
                               icon: Icon(Icons.keyboard_arrow_down_rounded,
-                                  color: _textSecondary),
+                                  color: context.appTextSecondary),
                             );
                           },
                         ),
@@ -590,12 +531,12 @@ class _PlanningPageState extends State<PlanningPage> {
                           controller: amountController,
                           keyboardType: TextInputType.number,
                           style: TextStyle(
-                            color: _textPrimary,
+                            color: context.appTextPrimary,
                             fontSize: 14,
                           ),
                           decoration: _inputDecoration(
                             label: AppLocalizations.of(context)!.amount,
-                            prefix: 'CFA ',
+                            prefix: '${appCurrency(context)} ',
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -615,12 +556,11 @@ class _PlanningPageState extends State<PlanningPage> {
                         TextFormField(
                           controller: descriptionController,
                           style: TextStyle(
-                            color: _textPrimary,
+                            color: context.appTextPrimary,
                             fontSize: 14,
                           ),
                           decoration: _inputDecoration(
-                            label:
-                                AppLocalizations.of(context)!.description,
+                            label: AppLocalizations.of(context)!.description,
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -641,17 +581,16 @@ class _PlanningPageState extends State<PlanningPage> {
                               context: context,
                               initialDate: startDate,
                               firstDate: DateTime.now(),
-                              lastDate: DateTime.now()
-                                  .add(const Duration(days: 365)),
+                              lastDate:
+                                  DateTime.now().add(const Duration(days: 365)),
                               builder: (context, child) {
                                 return Theme(
                                   data: Theme.of(context).copyWith(
-                                    colorScheme: _isDark
+                                    colorScheme: context.isDark
                                         ? ColorScheme.dark(
                                             primary: _primary,
                                             onPrimary: Colors.white,
-                                            surface:
-                                                AppTheme.darkCardColor,
+                                            surface: AppTheme.darkCardColor,
                                             onSurface: Colors.white,
                                           )
                                         : ColorScheme.light(
@@ -680,17 +619,16 @@ class _PlanningPageState extends State<PlanningPage> {
                               context: context,
                               initialDate: endDate,
                               firstDate: startDate,
-                              lastDate: DateTime.now()
-                                  .add(const Duration(days: 365)),
+                              lastDate:
+                                  DateTime.now().add(const Duration(days: 365)),
                               builder: (context, child) {
                                 return Theme(
                                   data: Theme.of(context).copyWith(
-                                    colorScheme: _isDark
+                                    colorScheme: context.isDark
                                         ? ColorScheme.dark(
                                             primary: _primary,
                                             onPrimary: Colors.white,
-                                            surface:
-                                                AppTheme.darkCardColor,
+                                            surface: AppTheme.darkCardColor,
                                             onSurface: Colors.white,
                                           )
                                         : ColorScheme.light(
@@ -721,13 +659,14 @@ class _PlanningPageState extends State<PlanningPage> {
                                       const EdgeInsets.symmetric(vertical: 14),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    side: BorderSide(color: _border),
+                                    side: BorderSide(
+                                        color: context.appBorderColor),
                                   ),
                                 ),
                                 child: Text(
                                   AppLocalizations.of(context)!.cancel,
                                   style: TextStyle(
-                                    color: _textSecondary,
+                                    color: context.appTextSecondary,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -745,21 +684,44 @@ class _PlanningPageState extends State<PlanningPage> {
                                 ),
                                 child: ElevatedButton(
                                   onPressed: () async {
-                                    if (formKey.currentState!.validate()) {
-                                      final categoryId = await SupabaseDataService()
-                                          .getCategoryIdByName(_selectedCategory!);
+                                    if (!(formKey.currentState?.validate() ??
+                                        false)) {
+                                      return;
+                                    }
+                                    if (dialogCategory == null) {
+                                      return;
+                                    }
+                                    try {
+                                      final categoryId =
+                                          await SupabaseDataService()
+                                              .getCategoryIdByName(
+                                                  dialogCategory!);
                                       final budget = Budget(
                                         categoryId: categoryId,
-                                        amount: double.parse(
-                                            amountController.text),
+                                        amount:
+                                            double.parse(amountController.text),
                                         startDate: startDate,
                                         endDate: endDate,
-                                        description:
-                                            descriptionController.text,
+                                        description: descriptionController.text,
                                       );
-                                      await SupabaseDataService().addBudget(budget);
+                                      await SupabaseDataService()
+                                          .addBudget(budget);
                                       if (!context.mounted) return;
                                       Navigator.pop(context);
+                                    } catch (e) {
+                                      if (!context.mounted) return;
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(userErrorMessage(e,
+                                              AppLocalizations.of(context)!)),
+                                          backgroundColor: _red,
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12)),
+                                        ),
+                                      );
                                     }
                                   },
                                   style: ElevatedButton.styleFrom(
@@ -811,16 +773,15 @@ class _PlanningPageState extends State<PlanningPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: _isDark
+          color: context.isDark
               ? Colors.white.withOpacity(0.04)
               : Colors.grey.withOpacity(0.05),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _border),
+          border: Border.all(color: context.appBorderColor),
         ),
         child: Row(
           children: [
-            Icon(Icons.calendar_today_rounded,
-                size: 18, color: _primary),
+            Icon(Icons.calendar_today_rounded, size: 18, color: _primary),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -830,7 +791,7 @@ class _PlanningPageState extends State<PlanningPage> {
                     label,
                     style: TextStyle(
                       fontSize: 12,
-                      color: _textSecondary,
+                      color: context.appTextSecondary,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -839,14 +800,14 @@ class _PlanningPageState extends State<PlanningPage> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: _textPrimary,
+                      color: context.appTextPrimary,
                     ),
                   ),
                 ],
               ),
             ),
             Icon(Icons.chevron_right_rounded,
-                size: 20, color: _textSecondary),
+                size: 20, color: context.appTextSecondary),
           ],
         ),
       ),
@@ -860,7 +821,7 @@ class _PlanningPageState extends State<PlanningPage> {
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        backgroundColor: _cardColor,
+        backgroundColor: context.appCardColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
@@ -890,7 +851,7 @@ class _PlanningPageState extends State<PlanningPage> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: _textPrimary,
+                  color: context.appTextPrimary,
                   letterSpacing: -0.3,
                 ),
               ),
@@ -900,7 +861,7 @@ class _PlanningPageState extends State<PlanningPage> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: _textSecondary,
+                  color: context.appTextSecondary,
                   height: 1.4,
                 ),
               ),
@@ -914,13 +875,13 @@ class _PlanningPageState extends State<PlanningPage> {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
-                          side: BorderSide(color: _border),
+                          side: BorderSide(color: context.appBorderColor),
                         ),
                       ),
                       child: Text(
                         AppLocalizations.of(context)!.cancel,
                         style: TextStyle(
-                          color: _textSecondary,
+                          color: context.appTextSecondary,
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                         ),

@@ -13,6 +13,8 @@
     "amount": "Amount",
     "spent": "Spent",
     "remaining": "Remaining",
+    "pleaseEnterName": "Please enter a name",
+    "title": "Title",
     "pleaseEnterAmountInvalid": "Please enter a valid amount",
     "pleaseEnterAmount": "  Please enter an amount",
     "description": "Description",
@@ -50,6 +52,7 @@
     "noDataDescription": "Add transactions to view statistics",
     "transactionEvolution": "Transaction evolution",
     "breakdown": "Breakdown",
+    "expensesByCategory": "Expenses by category",
     "appDescription": "SpendWise is a personal finance management application that allows you to easily track your expenses and income.",
     "features": "Features",
     "featureTransactionManagement": "Transaction Management",
@@ -70,6 +73,12 @@
     "featureThemeDescription": "Light and dark modes for optimal visual comfort.",
     "featureLocalStorage": "Local Storage",
     "featureLocalStorageDescription": "Data stored locally for full privacy.",
+    "featureOfflineSync": "Offline Mode",
+    "featureOfflineSyncDescription": "Use the app without internet. Changes sync automatically when you reconnect.",
+    "featureTodos": "Planned Tasks",
+    "featureTodosDescription": "Schedule recurring tasks with reminders and automatic transaction creation.",
+    "featureNotifSms": "SMS Auto-capture",
+    "featureNotifSmsDescription": "Automatically captures Wave and Orange Money transactions from your notifications.",
     "developer": "Developer",
     "developerTitle": "Mouhamadou Aliou BA",
     "developerSubtitle": "Engineering student at EPT",
@@ -77,6 +86,7 @@
     "enterName": "Please enter a name",
     "add": "Add",
     "noCategory": "No category",
+    "otherCategory": "Other",
     "addYourFirstCategory": "Add your first category",
     "defaultCategory": "Default category",
     "customCategory": "Category created by you",
@@ -113,7 +123,7 @@
     "authEmailRequired": "Please enter your email",
     "authEmailInvalid": "Please enter a valid email",
     "authPasswordRequired": "Please enter your password",
-    "authPasswordTooShort": "Password must be at least 6 characters",
+    "authPasswordTooShort": "Password must be at least 8 characters",
     "authCreateAccount": "Create\nAccount",
     "authCreateAccountSubtitle": "Start your journey to smart budgeting",
     "authFullNameHint": "Full name",
@@ -160,6 +170,23 @@
     "rejectTransaction": "Reject",
     "approveAll": "Approve all",
 
+    "noTransactions": "No transactions",
+    "addFirstTransaction": "Add your first transaction to start tracking",
+    "andXMoreCategories": "more categories",
+    "syncOffline": "Offline",
+    "syncOfflineWithPending": "Offline · {count} op. pending",
+    "@syncOfflineWithPending": {
+        "placeholders": { "count": { "type": "int" } }
+    },
+    "syncPendingSync": "{count} op. pending sync",
+    "@syncPendingSync": {
+        "placeholders": { "count": { "type": "int" } }
+    },
+    "syncPartialFailure": "Sync incomplete: {count} operation(s) failed",
+    "@syncPartialFailure": {
+        "placeholders": { "count": { "type": "String" } }
+    },
+
     "todos": "Tasks",
     "newTodo": "New Task",
     "addTodo": "Schedule a Task",
@@ -174,5 +201,15 @@
     "markAsDone": "Mark as Done",
     "confirmComplete": "Confirm Completion",
     "overdueTasks": "Overdue",
-    "todayTasks": "Today"
+    "todayTasks": "Today",
+    "processingError": "Error while processing",
+    "deleteTodoContent": "Delete \"{title}\"?",
+    "@deleteTodoContent": {
+        "placeholders": { "title": { "type": "String" } }
+    },
+
+    "notifConsentTitle": "Data Collection Consent",
+    "notifConsentBody": "This feature reads financial notifications and SMS from Wave and Orange Money to automatically capture your transactions. The detected financial content (amounts, descriptions) is stored locally on your device and is never sent to third parties. You can disable this feature at any time.",
+    "notifConsentAccept": "I Consent",
+    "notifConsentDecline": "Decline"
 }

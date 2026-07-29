@@ -48,6 +48,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get remaining => 'Restante';
 
   @override
+  String get pleaseEnterName => 'Por favor, ingresa un nombre';
+
+  @override
+  String get title => 'Título';
+
+  @override
   String get pleaseEnterAmountInvalid => 'Por favor, ingresa un monto válido';
 
   @override
@@ -159,7 +165,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get breakdown => 'Desglose';
 
   @override
-  String get appDescription => 'SpendWise es una aplicación de gestión financiera personal que te permite rastrear fácilmente tus gastos e ingresos.';
+  String get expensesByCategory => 'Gastos por categoría';
+
+  @override
+  String get appDescription =>
+      'SpendWise es una aplicación de gestión financiera personal que te permite rastrear fácilmente tus gastos e ingresos.';
 
   @override
   String get features => 'Características';
@@ -168,37 +178,43 @@ class AppLocalizationsEs extends AppLocalizations {
   String get featureTransactionManagement => 'Gestión de transacciones';
 
   @override
-  String get featureTransactionDescription => 'Agrega, edita y elimina tus gastos e ingresos con categorización.';
+  String get featureTransactionDescription =>
+      'Agrega, edita y elimina tus gastos e ingresos con categorización.';
 
   @override
   String get featureDashboard => 'Panel de control';
 
   @override
-  String get featureDashboardDescription => 'Resumen de tus finanzas con saldo, depósitos y retiros.';
+  String get featureDashboardDescription =>
+      'Resumen de tus finanzas con saldo, depósitos y retiros.';
 
   @override
   String get featureCategoryManagement => 'Gestión de categorías';
 
   @override
-  String get featureCategoryDescription => 'Categorías predeterminadas y personalizadas para organizar tus transacciones.';
+  String get featureCategoryDescription =>
+      'Categorías predeterminadas y personalizadas para organizar tus transacciones.';
 
   @override
   String get featureBudgets => 'Presupuestos';
 
   @override
-  String get featureBudgetsDescription => 'Crea y controla tus presupuestos por categoría con alertas.';
+  String get featureBudgetsDescription =>
+      'Crea y controla tus presupuestos por categoría con alertas.';
 
   @override
   String get featureStatistics => 'Estadísticas detalladas';
 
   @override
-  String get featureStatisticsDescription => 'Gráficos de barras y circulares para analizar tus gastos e ingresos.';
+  String get featureStatisticsDescription =>
+      'Gráficos de barras y circulares para analizar tus gastos e ingresos.';
 
   @override
   String get featureDateFilters => 'Filtros de fecha';
 
   @override
-  String get featureDateFiltersDescription => 'Analiza tus finanzas por día, semana, mes o año.';
+  String get featureDateFiltersDescription =>
+      'Analiza tus finanzas por día, semana, mes o año.';
 
   @override
   String get featureTheme => 'Tema personalizable';
@@ -207,16 +223,40 @@ class AppLocalizationsEs extends AppLocalizations {
   String get featureLanguage => 'Idioma';
 
   @override
-  String get featureLanguageDescription => 'Cambia entre inglés y francés sin problemas.';
+  String get featureLanguageDescription =>
+      'Cambia entre inglés y francés sin problemas.';
 
   @override
-  String get featureThemeDescription => 'Modos claro y oscuro para mayor comodidad visual.';
+  String get featureThemeDescription =>
+      'Modos claro y oscuro para mayor comodidad visual.';
 
   @override
   String get featureLocalStorage => 'Almacenamiento local';
 
   @override
-  String get featureLocalStorageDescription => 'Datos almacenados localmente para máxima privacidad.';
+  String get featureLocalStorageDescription =>
+      'Datos almacenados localmente para máxima privacidad.';
+
+  @override
+  String get featureOfflineSync => 'Modo sin conexión';
+
+  @override
+  String get featureOfflineSyncDescription =>
+      'Usa la app sin internet. Los cambios se sincronizan automáticamente al reconectarte.';
+
+  @override
+  String get featureTodos => 'Tareas planificadas';
+
+  @override
+  String get featureTodosDescription =>
+      'Programa tareas recurrentes con recordatorios y creación automática de transacciones.';
+
+  @override
+  String get featureNotifSms => 'Captura SMS automática';
+
+  @override
+  String get featureNotifSmsDescription =>
+      'Captura automáticamente tus transacciones de Wave y Orange Money desde tus notificaciones.';
 
   @override
   String get developer => 'Desarrollador';
@@ -240,6 +280,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get noCategory => 'Sin categoría';
 
   @override
+  String get otherCategory => 'Otros';
+
+  @override
   String get addYourFirstCategory => 'Agrega tu primera categoría';
 
   @override
@@ -252,7 +295,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get deleteConfirmationTitle => 'Confirmar eliminación';
 
   @override
-  String get deleteConfirmationContent => '¿Estás seguro de que deseas eliminar la categoría?';
+  String get deleteConfirmationContent =>
+      '¿Estás seguro de que deseas eliminar la categoría?';
 
   @override
   String get cancel => 'Cancelar';
@@ -264,7 +308,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get restoreDefaultCategories => 'Restaurar categorías predeterminadas';
 
   @override
-  String get restoreDefaultCategoriesConfirmation => '¿Deseas restaurar las categorías predeterminadas? Esto eliminará todas las categorías personalizadas.';
+  String get restoreDefaultCategoriesConfirmation =>
+      '¿Deseas restaurar las categorías predeterminadas? Esto eliminará todas las categorías personalizadas.';
 
   @override
   String get error => 'Error';
@@ -300,7 +345,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authWelcomeTitle => 'Presupuesto\ninteligente\ny sencillo';
 
   @override
-  String get authWelcomeSubtitle => 'Controla tus gastos y mantente dentro de tu\npresupuesto con actualizaciones en tiempo real\ny alertas.';
+  String get authWelcomeSubtitle =>
+      'Controla tus gastos y mantente dentro de tu\npresupuesto con actualizaciones en tiempo real\ny alertas.';
 
   @override
   String get authSignIn => 'Iniciar sesión';
@@ -318,7 +364,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authWelcomeBack => 'Bienvenido\nde nuevo';
 
   @override
-  String get authSignInSubtitle => 'Inicia sesión para seguir gestionando tu presupuesto';
+  String get authSignInSubtitle =>
+      'Inicia sesión para seguir gestionando tu presupuesto';
 
   @override
   String get authEmailHint => 'Correo electrónico';
@@ -345,13 +392,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authPasswordRequired => 'Por favor, ingresa tu contraseña';
 
   @override
-  String get authPasswordTooShort => 'La contraseña debe tener al menos 6 caracteres';
+  String get authPasswordTooShort =>
+      'La contraseña debe tener al menos 8 caracteres';
 
   @override
   String get authCreateAccount => 'Crear\ncuenta';
 
   @override
-  String get authCreateAccountSubtitle => 'Comienza tu camino hacia un presupuesto inteligente';
+  String get authCreateAccountSubtitle =>
+      'Comienza tu camino hacia un presupuesto inteligente';
 
   @override
   String get authFullNameHint => 'Nombre completo';
@@ -378,13 +427,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authTermsConditions => 'Términos y condiciones';
 
   @override
-  String get authAgreeTermsRequired => 'Por favor, acepta los términos y condiciones';
+  String get authAgreeTermsRequired =>
+      'Por favor, acepta los términos y condiciones';
 
   @override
   String get authCreateAccountBtn => 'Crear cuenta';
 
   @override
-  String get authAccountCreated => '¡Cuenta creada! Revisa tu correo para confirmar.';
+  String get authAccountCreated =>
+      '¡Cuenta creada! Revisa tu correo para confirmar.';
 
   @override
   String get authUnexpectedError => 'Ocurrió un error inesperado';
@@ -393,10 +444,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authResetPassword => 'Restablecer\ncontraseña';
 
   @override
-  String get authResetSubtitle => 'Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.';
+  String get authResetSubtitle =>
+      'Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.';
 
   @override
-  String get authResetEmailSentSubtitle => 'Enviamos un enlace de restablecimiento a tu correo. Revisa tu bandeja de entrada.';
+  String get authResetEmailSentSubtitle =>
+      'Enviamos un enlace de restablecimiento a tu correo. Revisa tu bandeja de entrada.';
 
   @override
   String get authSendResetLink => 'Enviar enlace';
@@ -450,13 +503,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get notificationModeAuto => 'Automático';
 
   @override
-  String get notificationModeAutoDesc => 'Las transacciones se crean automáticamente';
+  String get notificationModeAutoDesc =>
+      'Las transacciones se crean automáticamente';
 
   @override
   String get notificationModeConfirmation => 'Confirmación manual';
 
   @override
-  String get notificationModeConfirmationDesc => 'Las transacciones se ponen en espera para aprobación';
+  String get notificationModeConfirmationDesc =>
+      'Las transacciones se ponen en espera para aprobación';
 
   @override
   String get defaultCategories => 'Categorías por defecto';
@@ -492,7 +547,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get noTodos => 'No hay tareas programadas';
 
   @override
-  String get createFirstTodo => 'Programa tus gastos e ingresos con anticipación.';
+  String get createFirstTodo =>
+      'Programa tus gastos e ingresos con anticipación.';
 
   @override
   String get dueDate => 'Fecha de vencimiento';
@@ -520,4 +576,64 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get todayTasks => 'Hoy';
+
+  @override
+  String get thisWeekTasks => 'Esta semana';
+
+  @override
+  String get laterTasks => 'Más tarde';
+
+  @override
+  String get editTransaction => 'Editar transacción';
+
+  @override
+  String get deleteTransactionConfirmation =>
+      '¿Realmente desea eliminar esta transacción?';
+
+  @override
+  String get update => 'Actualizar';
+
+  @override
+  String get noTransactions => 'Sin transacciones';
+
+  @override
+  String get addFirstTransaction =>
+      'Agrega tu primera transacción para comenzar el seguimiento';
+
+  @override
+  String get syncOffline => 'Sin conexión';
+
+  @override
+  String syncOfflineWithPending(int count) =>
+      'Sin conexión · $count op. pendientes';
+
+  @override
+  String syncPendingSync(int count) =>
+      '$count op. pendientes de sincronización';
+
+  @override
+  String syncPartialFailure(String count) =>
+      'Sincronización incompleta: $count operación(es) fallida(s)';
+
+  @override
+  String get andXMoreCategories => 'categorías más';
+
+  @override
+  String get processingError => 'Error al procesar';
+
+  @override
+  String deleteTodoContent(String title) => '¿Eliminar "$title"?';
+
+  @override
+  String get notifConsentTitle => 'Consentimiento de recopilación de datos';
+
+  @override
+  String get notifConsentBody =>
+      'Esta función lee las notificaciones y SMS financieros de Wave y Orange Money para capturar automáticamente sus transacciones. El contenido financiero detectado (importes, descripciones) se almacena localmente en su dispositivo y nunca se transmite a terceros. Puede desactivar esta función en cualquier momento.';
+
+  @override
+  String get notifConsentAccept => 'Consiento';
+
+  @override
+  String get notifConsentDecline => 'Rechazar';
 }

@@ -1,10 +1,12 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:spendwise/constants/category_icons.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/models/transaction.dart';
 import 'package:spendwise/services/supabase_data_service.dart';
-import 'package:spendwise/theme/app_theme.dart';
+import 'package:spendwise/constants/app_colors.dart';
+import 'package:spendwise/utils/app_format.dart';
+import 'package:spendwise/widgets/app_empty_state.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -27,6 +29,7 @@ class _DashboardPageState extends State<DashboardPage>
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
+
     _fadeAnimation = CurvedAnimation(
       parent: _controller,
       curve: Curves.easeOut,
@@ -47,22 +50,14 @@ class _DashboardPageState extends State<DashboardPage>
     super.dispose();
   }
 
-  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
-
-  Color get _cardColor => _isDark ? AppTheme.darkCardColor : Colors.white;
-  Color get _surfaceColor =>
-      _isDark ? AppTheme.darkSurfaceColor : const Color(0xFFF7F8FC);
-  Color get _textPrimary => _isDark ? Colors.white : const Color(0xFF1A1D29);
-  Color get _textSecondary =>
-      _isDark ? AppTheme.darkTextSecondaryColor : const Color(0xFF6B7280);
-  Color get _border =>
-      _isDark ? AppTheme.darkBorderColor : Colors.black.withOpacity(0.04);
-
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Transaction>>(
       stream: SupabaseDataService().transactionsStream,
       builder: (context, snapshot) {
+        if (!SupabaseDataService().isFirstLoadComplete) {
+          return const Center(child: CircularProgressIndicator());
+        }
         final allTransactions = snapshot.data ?? [];
 
         double total = 0;
@@ -70,8 +65,7 @@ class _DashboardPageState extends State<DashboardPage>
         double expenses = 0;
 
         // Already sorted by date desc from service
-        List<Transaction> recentTransactions =
-            allTransactions.take(5).toList();
+        List<Transaction> recentTransactions = allTransactions.take(5).toList();
 
         for (var tx in allTransactions) {
           if (tx.isDeposit) {
@@ -111,25 +105,24 @@ class _DashboardPageState extends State<DashboardPage>
                           )
                         else
                           ...recentTransactions.map((tx) => Container(
-                                padding: EdgeInsets.all(5),
+                                padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                    color: _cardColor,
-                                    borderRadius:
-                                        BorderRadius.all(Radius.circular(5))),
+                                    color: context.appCardColor,
+                                    borderRadius: BorderRadius.circular(12)),
                                 child: _buildTransactionTile(tx),
                               )),
                         const SizedBox(height: 28),
-                        _buildSectionHeader(
-                          AppLocalizations.of(context)!.graphicView,
-                        ),
-                        const SizedBox(height: 12),
-                        if (income == 0 && expenses == 0)
-                          _buildEmptyState(
-                            Icons.analytics_rounded,
-                            AppLocalizations.of(context)!.noDataDescription,
-                          )
-                        else
-                          _buildPieChart(income, expenses),
+                        // _buildSectionHeader(
+                        //   AppLocalizations.of(context)!.graphicView,
+                        // ),
+                        // const SizedBox(height: 12),
+                        // if (income == 0 && expenses == 0)
+                        //   _buildEmptyState(
+                        //     Icons.analytics_rounded,
+                        //     AppLocalizations.of(context)!.noDataDescription,
+                        //   )
+                        // else
+                        //   _buildPieChart(income, expenses),
                         const SizedBox(height: 80),
                       ],
                     ),
@@ -229,13 +222,17 @@ class _DashboardPageState extends State<DashboardPage>
             ],
           ),
           const SizedBox(height: 20),
-          Text(
-            '${NumberFormat('#,###', 'fr_FR').format(total.abs())} CFA',
-            style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-              letterSpacing: -0.5,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              formatMoney(context, total.abs(), listen: true),
+              style: const TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                letterSpacing: -0.5,
+              ),
             ),
           ),
           const SizedBox(height: 6),
@@ -255,13 +252,21 @@ class _DashboardPageState extends State<DashboardPage>
               child: Row(
                 children: [
                   Expanded(
-                    flex: income > 0 ? income.toInt() : 1,
+                    flex: income > 0
+                        ? ((income / (income + expenses)) * 100)
+                            .round()
+                            .clamp(1, 99)
+                        : 1,
                     child:
                         Container(color: Colors.greenAccent.withOpacity(0.8)),
                   ),
                   const SizedBox(width: 2),
                   Expanded(
-                    flex: expenses > 0 ? expenses.toInt() : 1,
+                    flex: expenses > 0
+                        ? ((expenses / (income + expenses)) * 100)
+                            .round()
+                            .clamp(1, 99)
+                        : 1,
                     child: Container(color: Colors.redAccent.withOpacity(0.8)),
                   ),
                 ],
@@ -309,9 +314,9 @@ class _DashboardPageState extends State<DashboardPage>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: context.appCardColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
+        border: Border.all(color: context.appBorderColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -340,18 +345,21 @@ class _DashboardPageState extends State<DashboardPage>
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: _textSecondary,
+                    color: context.appTextSecondary,
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  NumberFormat('#,###', 'fr_FR').format(amount),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: _textPrimary,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    formatMoney(context, amount, withCurrency: false),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: context.appTextPrimary,
+                    ),
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -370,7 +378,7 @@ class _DashboardPageState extends State<DashboardPage>
           style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w500,
-            color: _textPrimary,
+            color: context.appTextPrimary,
             letterSpacing: -0.3,
           ),
         ),
@@ -379,70 +387,21 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   Widget _buildEmptyState(IconData icon, String message) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
-      decoration: BoxDecoration(
-        color: _cardColor,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: _surfaceColor,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 32, color: _textSecondary),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            message,
-            style: TextStyle(
-              fontSize: 14,
-              color: _textSecondary,
-              height: 1.4,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
+    return AppEmptyState(icon: icon, title: message, inCard: true);
   }
 
   Widget _buildTransactionTile(Transaction tx) {
     final isDeposit = tx.isDeposit;
     final color = isDeposit ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
 
-    final Map<String, IconData> categoryIcons = {
-      'alimentation': Icons.restaurant_rounded,
-      'transport': Icons.directions_car_rounded,
-      'logement': Icons.home_rounded,
-      'loisirs': Icons.sports_esports_rounded,
-      'santé': Icons.favorite_rounded,
-      'sante': Icons.favorite_rounded,
-      'éducation': Icons.school_rounded,
-      'education': Icons.school_rounded,
-      'autres': Icons.more_horiz_rounded,
-    };
     final categoryIcon =
-        categoryIcons[(tx.categoryName ?? '').toLowerCase()] ?? Icons.receipt_rounded;
+        CategoryIcons.map[(tx.categoryName ?? '').toLowerCase()] ??
+            Icons.receipt_rounded;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: _cardColor,
-        // borderRadius: BorderRadius.circular(16),
-        // border: Border.all(color: _border),
-        // boxShadow: [
-        //   BoxShadow(
-        //     color: Colors.black.withOpacity(0.02),
-        //     blurRadius: 8,
-        //     offset: const Offset(0, 2),
-        //   ),
-        // ],
+        color: context.appCardColor,
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -466,7 +425,7 @@ class _DashboardPageState extends State<DashboardPage>
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: _textPrimary,
+                      color: context.appTextPrimary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -474,28 +433,11 @@ class _DashboardPageState extends State<DashboardPage>
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      // Container(
-                      //   padding: const EdgeInsets.symmetric(
-                      //       horizontal: 6, vertical: 2),
-                      //   decoration: BoxDecoration(
-                      //     color: _surfaceColor,
-                      //     borderRadius: BorderRadius.circular(4),
-                      //   ),
-                      //   child: Text(
-                      //     tx.category,
-                      //     style: TextStyle(
-                      //       fontSize: 11,
-                      //       fontWeight: FontWeight.w500,
-                      //       color: _textSecondary,
-                      //     ),
-                      //   ),
-                      // ),
-                      // const SizedBox(width: 8),
                       Text(
-                        DateFormat('dd MMM', 'fr_FR').format(tx.date),
+                        formatDate(context, 'dd MMM', tx.date),
                         style: TextStyle(
                           fontSize: 12,
-                          color: _textSecondary,
+                          color: context.appTextSecondary,
                         ),
                       ),
                     ],
@@ -505,7 +447,7 @@ class _DashboardPageState extends State<DashboardPage>
             ),
             const SizedBox(width: 8),
             Text(
-              '${isDeposit ? '+' : '-'}${NumberFormat('#,###', 'fr_FR').format(tx.amount)}',
+              '${isDeposit ? '+' : '-'}${formatMoney(context, tx.amount, withCurrency: false)}',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
@@ -518,6 +460,7 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
+  // ignore: unused_element
   Widget _buildPieChart(double income, double expenses) {
     final total = income + expenses;
     final incomePercent = (income / total * 100).toStringAsFixed(0);
@@ -526,9 +469,9 @@ class _DashboardPageState extends State<DashboardPage>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: context.appCardColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
+        border: Border.all(color: context.appBorderColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
@@ -593,18 +536,22 @@ class _DashboardPageState extends State<DashboardPage>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      NumberFormat('#,###', 'fr_FR').format(income - expenses),
+                      formatMoney(
+                        context,
+                        income - expenses,
+                        withCurrency: false,
+                      ),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: _textPrimary,
+                        color: context.appTextPrimary,
                       ),
                     ),
                     Text(
-                      'CFA',
+                      appCurrency(context),
                       style: TextStyle(
                         fontSize: 11,
-                        color: _textSecondary,
+                        color: context.appTextSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -625,7 +572,7 @@ class _DashboardPageState extends State<DashboardPage>
               Container(
                 width: 1,
                 height: 30,
-                color: _border,
+                color: context.appBorderColor,
               ),
               _buildLegendItem(
                 AppLocalizations.of(context)!.withdrawal,
@@ -658,7 +605,7 @@ class _DashboardPageState extends State<DashboardPage>
               label,
               style: TextStyle(
                 fontSize: 13,
-                color: _textSecondary,
+                color: context.appTextSecondary,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -666,11 +613,11 @@ class _DashboardPageState extends State<DashboardPage>
         ),
         const SizedBox(height: 4),
         Text(
-          '${NumberFormat('#,###', 'fr_FR').format(amount)} CFA',
+          formatMoney(context, amount),
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: _textPrimary,
+            color: context.appTextPrimary,
           ),
         ),
       ],

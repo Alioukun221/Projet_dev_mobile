@@ -8,6 +8,20 @@ allprojects {
 rootProject.buildDir = "../build"
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
+    project.plugins.withId("com.android.library") {
+        def androidExtension = project.extensions.findByName("android")
+        if (androidExtension != null && androidExtension.namespace == null) {
+            def manifestFile = project.file("src/main/AndroidManifest.xml")
+            def manifestPackage = null
+            if (manifestFile.exists()) {
+                def matcher = manifestFile.getText("UTF-8") =~ /package\s*=\s*["']([^"']+)["']/
+                if (matcher.find()) {
+                    manifestPackage = matcher.group(1)
+                }
+            }
+            androidExtension.namespace = manifestPackage ?: "sn.alioukun.spendwise.${project.name.replaceAll('[^A-Za-z0-9_]', '_')}"
+        }
+    }
 }
 subprojects {
     project.evaluationDependsOn(":app")

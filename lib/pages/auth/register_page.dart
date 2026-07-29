@@ -1,9 +1,12 @@
+// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/pages/auth/login_page.dart';
 import 'package:spendwise/pages/home_page.dart';
+import 'package:spendwise/providers/locale_provider.dart';
+import 'package:spendwise/providers/profile_provider.dart';
 import 'package:spendwise/providers/theme_provider.dart';
 import 'package:spendwise/services/auth_service.dart';
 import 'package:spendwise/services/supabase_data_service.dart';
@@ -50,6 +53,31 @@ class _RegisterPageState extends State<RegisterPage>
     _confirmPasswordController.dispose();
     _animController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleGoogleLogin() async {
+    setState(() => _isLoading = true);
+    try {
+      await AuthService().signInWithGoogle();
+      await SupabaseDataService().init();
+      if (!mounted) return;
+      final profileData = await AuthService().getProfile();
+      Provider.of<ProfileProvider>(context, listen: false).applyFromData(profileData);
+      Provider.of<ThemeProvider>(context, listen: false).applyFromData(profileData);
+      Provider.of<LocaleProvider>(context, listen: false).applyFromData(profileData);
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      debugPrint('[Register] Google sign-in error: $e');
+      if (!mounted) return;
+      _showError(AppLocalizations.of(context)!.authUnexpectedError);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _handleRegister() async {
@@ -135,52 +163,34 @@ class _RegisterPageState extends State<RegisterPage>
     final l10n = AppLocalizations.of(context)!;
 
     final bgGradient = isDark
-        ? const [Color(0xFF0B0E2D), Color(0xFF0A0A1A)]
-        : const [Color(0xFFFFFFFF), Color(0xFFF0F2F8)];
-    final textColor = isDark ? Colors.white : AppTheme.textPrimaryColor;
-    final subtextColor = isDark
-        ? Colors.white.withOpacity(0.45)
-        : AppTheme.textSecondaryColor;
+        ? [AppTheme.darkBgColor, AppTheme.darkSurfaceColor]
+        : [Colors.white, const Color(0xFFF7F8FC)];
+    final textColor = isDark ? Colors.white : const Color(0xFF1A1D29);
+    final subtextColor = isDark ? AppTheme.darkTextSecondaryColor : const Color(0xFF6B7280);
     final btnBg = isDark ? AppTheme.accentColor : AppTheme.primaryColor;
-    final btnFg = isDark ? const Color(0xFF0A0A1A) : Colors.white;
+    final btnFg = isDark ? AppTheme.darkBgColor : Colors.white;
     final linkColor = isDark ? AppTheme.accentColor : AppTheme.primaryColor;
-    final backBtnBg = isDark
-        ? Colors.white.withOpacity(0.08)
-        : Colors.black.withOpacity(0.05);
-    final backBtnIcon = isDark ? Colors.white : AppTheme.textPrimaryColor;
-    final dividerColor = isDark
-        ? Colors.white.withOpacity(0.08)
-        : Colors.black.withOpacity(0.08);
-    final dividerTextColor = isDark
-        ? Colors.white.withOpacity(0.3)
-        : AppTheme.textSecondaryColor;
-    final socialBorder = isDark
-        ? Colors.white.withOpacity(0.1)
-        : Colors.black.withOpacity(0.08);
-    final socialBg = isDark
-        ? Colors.white.withOpacity(0.05)
-        : Colors.black.withOpacity(0.03);
-    final socialTextColor = isDark ? Colors.white : AppTheme.textPrimaryColor;
+    final backBtnBg = isDark ? AppTheme.darkCardColor : Colors.black.withOpacity(0.05);
+    final backBtnIcon = isDark ? Colors.white : const Color(0xFF1A1D29);
+    final dividerColor = isDark ? AppTheme.darkBorderColor : Colors.black.withOpacity(0.08);
+    final dividerTextColor = isDark ? AppTheme.darkTextSecondaryColor : const Color(0xFF6B7280);
+    final socialBorder = isDark ? AppTheme.darkBorderColor : Colors.black.withOpacity(0.08);
+    final socialBg = isDark ? AppTheme.darkCardColor : Colors.white;
+    final socialTextColor = isDark ? Colors.white : const Color(0xFF1A1D29);
     final glowColor1 = const Color(0xFF7B2FFF).withOpacity(isDark ? 0.2 : 0.08);
-    final glowColor2 = const Color(0xFF005EFF).withOpacity(isDark ? 0.08 : 0.04);
-    final checkboxBorder = isDark
-        ? Colors.white.withOpacity(0.15)
-        : Colors.black.withOpacity(0.15);
+    final glowColor2 = AppTheme.primaryColor.withOpacity(isDark ? 0.08 : 0.04);
+    final checkboxBorder = isDark ? AppTheme.darkBorderColor : Colors.black.withOpacity(0.15);
 
     // Input field colors
     final inputFillColor = isDark
         ? Colors.white.withOpacity(0.06)
         : Colors.black.withOpacity(0.03);
-    final inputBorderColor = isDark
-        ? Colors.white.withOpacity(0.08)
-        : Colors.black.withOpacity(0.08);
+    final inputBorderColor = isDark ? AppTheme.darkBorderColor : Colors.black.withOpacity(0.08);
     final inputHintColor = isDark
         ? Colors.white.withOpacity(0.25)
-        : AppTheme.textSecondaryColor.withOpacity(0.6);
-    final inputIconColor = isDark
-        ? Colors.white.withOpacity(0.3)
-        : AppTheme.textSecondaryColor;
-    final inputTextColor = isDark ? Colors.white : AppTheme.textPrimaryColor;
+        : const Color(0xFF6B7280).withOpacity(0.6);
+    final inputIconColor = isDark ? Colors.white.withOpacity(0.3) : const Color(0xFF6B7280);
+    final inputTextColor = isDark ? Colors.white : const Color(0xFF1A1D29);
 
     return Scaffold(
       body: Container(
@@ -330,7 +340,7 @@ class _RegisterPageState extends State<RegisterPage>
                                 if (value == null || value.isEmpty) {
                                   return l10n.authPasswordEnter;
                                 }
-                                if (value.length < 6) {
+                                if (value.length < 8) {
                                   return l10n.authPasswordTooShort;
                                 }
                                 return null;
@@ -483,31 +493,21 @@ class _RegisterPageState extends State<RegisterPage>
 
                       const SizedBox(height: 20),
 
-                      // Social buttons
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _SocialButton(
-                              icon: Icons.g_mobiledata_rounded,
-                              label: 'Google',
-                              borderColor: socialBorder,
-                              bgColor: socialBg,
-                              textColor: socialTextColor,
-                              onTap: () {},
-                            ),
+                      // Google button
+                      SizedBox(
+                        width: double.infinity,
+                        child: _SocialButton(
+                          icon: Image(
+                            image: const AssetImage('assets/images/logo_google.png'),
+                            width: 22,
+                            height: 22,
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _SocialButton(
-                              icon: Icons.apple_rounded,
-                              label: 'Apple',
-                              borderColor: socialBorder,
-                              bgColor: socialBg,
-                              textColor: socialTextColor,
-                              onTap: () {},
-                            ),
-                          ),
-                        ],
+                          label: 'Google',
+                          borderColor: socialBorder,
+                          bgColor: socialBg,
+                          textColor: socialTextColor,
+                          onTap: _isLoading ? () {} : _handleGoogleLogin,
+                        ),
                       ),
 
                       const SizedBox(height: 28),
@@ -633,7 +633,7 @@ class _AuthTextField extends StatelessWidget {
 }
 
 class _SocialButton extends StatelessWidget {
-  final IconData icon;
+  final Widget icon;
   final String label;
   final Color borderColor;
   final Color bgColor;
@@ -663,7 +663,7 @@ class _SocialButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: textColor, size: 24),
+            icon,
             const SizedBox(width: 8),
             Text(
               label,

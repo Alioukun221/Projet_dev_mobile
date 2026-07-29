@@ -19,6 +19,8 @@ init.md
 migrate_working_dir/
 
 .claude/
+android/.gitignore
+google-client-id/
 
 # IntelliJ related
 *.iml

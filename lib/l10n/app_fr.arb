@@ -12,6 +12,8 @@
     "amount": "Montant",
     "spent":"Dépensé",
     "remaining": "Restant",
+    "title": "Titre",
+    "pleaseEnterName": "Veuillez entrer un nom",
     "pleaseEnterAmount": "Veuillez entrer un montant",
     "pleaseEnterAmountInvalid": "Veuillez entrer un montant valide",
     "description": "Description",
@@ -50,6 +52,7 @@
     "noDataDescription": "Ajoutez des transactions pour voir les statistiques.",
     "transactionEvolution": "Évolution des transactions",
     "breakdown": "Répartition",
+    "expensesByCategory": "Dépenses par catégorie",
     "appDescription": "SpendWise est une application de gestion de finances personnelles qui vous permet de suivre vos dépenses et vos revenus en toute simplicité.",
     "features": "Fonctionnalités",
     "featureTransactionManagement": "Gestion des transactions",
@@ -70,6 +73,12 @@
     "featureThemeDescription": "Mode clair et sombre pour un confort visuel optimal.",
     "featureLocalStorage": "Stockage local",
     "featureLocalStorageDescription": "Données sauvegardées localement pour une confidentialité totale.",
+    "featureOfflineSync": "Mode hors ligne",
+    "featureOfflineSyncDescription": "Utilisez l'app sans internet. Les changements se synchronisent automatiquement à la reconnexion.",
+    "featureTodos": "Tâches planifiées",
+    "featureTodosDescription": "Planifiez des tâches récurrentes avec rappels et création automatique de transactions.",
+    "featureNotifSms": "Capture SMS automatique",
+    "featureNotifSmsDescription": "Capture automatiquement vos transactions Wave et Orange Money depuis vos notifications.",
     "developer": "Développeur",
     "developerTitle": "Mouhamadou Aliou BA",
     "developerSubtitle": "Élève ingénieur à l'EPT",
@@ -77,6 +86,7 @@
     "enterName": "Veuillez entrer un nom",
     "add": "Ajouter",
     "noCategory": "Aucune catégorie",
+    "otherCategory": "Autres",
     "addYourFirstCategory": "Ajoutez votre première catégorie",
     "defaultCategory": "Catégorie par défaut",
     "customCategory": "Catégorie créée par vous",
@@ -160,6 +170,23 @@
     "rejectTransaction": "Rejeter",
     "approveAll": "Tout approuver",
 
+    "noTransactions": "Aucune transaction",
+    "addFirstTransaction": "Ajoutez votre première transaction pour commencer le suivi",
+    "andXMoreCategories": "catégories supplémentaires",
+    "syncOffline": "Hors ligne",
+    "syncOfflineWithPending": "Hors ligne · {count} op. en attente",
+    "@syncOfflineWithPending": {
+        "placeholders": { "count": { "type": "int" } }
+    },
+    "syncPendingSync": "{count} op. en attente de synchronisation",
+    "@syncPendingSync": {
+        "placeholders": { "count": { "type": "int" } }
+    },
+    "syncPartialFailure": "Sync incomplète : {count} opération(s) échouée(s)",
+    "@syncPartialFailure": {
+        "placeholders": { "count": { "type": "String" } }
+    },
+
     "todos": "Tâches",
     "newTodo": "Nouvelle tâche",
     "addTodo": "Programmer une tâche",
@@ -174,5 +201,15 @@
     "markAsDone": "Marquer fait",
     "confirmComplete": "Confirmer la complétion",
     "overdueTasks": "En retard",
-    "todayTasks": "Aujourd'hui"
+    "todayTasks": "Aujourd'hui",
+    "processingError": "Erreur lors du traitement",
+    "deleteTodoContent": "Supprimer \"{title}\" ?",
+    "@deleteTodoContent": {
+        "placeholders": { "title": { "type": "String" } }
+    },
+
+    "notifConsentTitle": "Consentement de collecte de données",
+    "notifConsentBody": "Cette fonctionnalité lit les notifications et SMS financiers de Wave et Orange Money pour capturer automatiquement vos transactions. Le contenu financier détecté (montants, descriptions) est stocké localement sur votre appareil et n'est jamais transmis à des tiers. Vous pouvez désactiver cette fonctionnalité à tout moment.",
+    "notifConsentAccept": "J'accepte",
+    "notifConsentDecline": "Refuser"
 }

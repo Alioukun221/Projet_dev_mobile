@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:spendwise/constants/app_colors.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/models/category.dart';
 import 'package:spendwise/services/supabase_data_service.dart';
-import 'package:spendwise/theme/app_theme.dart';
+import 'package:spendwise/utils/user_error.dart';
 
 class CategoriesPage extends StatefulWidget {
-  final bool isDarkMode;
-  const CategoriesPage({super.key, required this.isDarkMode});
+  const CategoriesPage({super.key});
 
   @override
   State<CategoriesPage> createState() => _CategoriesPageState();
@@ -25,21 +25,6 @@ class _CategoriesPageState extends State<CategoriesPage> {
     'Éducation': Icons.school,
     'Autres': Icons.more_horiz,
   };
-
-  bool get _isDarkMode => widget.isDarkMode;
-
-  // Design system colors
-  Color get _bgColor =>
-      _isDarkMode ? AppTheme.darkBgColor : const Color(0xFFF7F8FC);
-  Color get _cardColor =>
-      _isDarkMode ? AppTheme.darkCardColor : Colors.white;
-  Color get _textPrimary =>
-      _isDarkMode ? Colors.white : const Color(0xFF1A1D29);
-  Color get _textSecondary =>
-      _isDarkMode ? AppTheme.darkTextSecondaryColor : const Color(0xFF6B7280);
-  Color get _borderColor => _isDarkMode
-      ? AppTheme.darkBorderColor
-      : Colors.black.withOpacity(0.04);
 
   static const Color _primaryBlue = Color(0xFF005EFF);
   static const Color _redAccent = Color(0xFFEF4444);
@@ -60,17 +45,18 @@ class _CategoriesPageState extends State<CategoriesPage> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          backgroundColor: _cardColor,
+          backgroundColor: context.appCardColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
           ),
           title: Text(
             AppLocalizations.of(context)!.error,
-            style: TextStyle(color: _textPrimary, fontWeight: FontWeight.w600),
+            style: TextStyle(
+                color: context.appTextPrimary, fontWeight: FontWeight.w600),
           ),
           content: Text(
-            '${AppLocalizations.of(context)!.restoreCategoryError} ${e.toString()}',
-            style: TextStyle(color: _textSecondary),
+            userErrorMessage(e, AppLocalizations.of(context)!),
+            style: TextStyle(color: context.appTextSecondary),
           ),
           actions: [
             TextButton(
@@ -106,18 +92,18 @@ class _CategoriesPageState extends State<CategoriesPage> {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            backgroundColor: _cardColor,
+            backgroundColor: context.appCardColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(18),
             ),
             title: Text(
               AppLocalizations.of(context)!.error,
-              style:
-                  TextStyle(color: _textPrimary, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                  color: context.appTextPrimary, fontWeight: FontWeight.w600),
             ),
             content: Text(
-              e.toString(),
-              style: TextStyle(color: _textSecondary),
+              userErrorMessage(e, AppLocalizations.of(context)!),
+              style: TextStyle(color: context.appTextSecondary),
             ),
             actions: [
               TextButton(
@@ -137,7 +123,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bgColor,
+      backgroundColor: context.appBgColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leading: Padding(
@@ -147,16 +133,17 @@ class _CategoriesPageState extends State<CategoriesPage> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: _cardColor,
+                color: context.appCardColor,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _borderColor),
+                border: Border.all(color: context.appBorderColor),
               ),
               child: IconButton(
                 padding: EdgeInsets.zero,
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
                 icon: Icon(
-                  Icons.arrow_back_ios_new,
+                  Icons.arrow_back_ios_rounded,
                   size: 18,
-                  color: _textPrimary,
+                  color: context.appTextPrimary,
                 ),
                 onPressed: () => Navigator.pop(context),
               ),
@@ -168,7 +155,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
         title: Text(
           AppLocalizations.of(context)!.categories,
           style: TextStyle(
-            color: _textPrimary,
+            color: context.appTextPrimary,
             fontSize: 20,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.3,
@@ -183,22 +170,24 @@ class _CategoriesPageState extends State<CategoriesPage> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: _cardColor,
+                  color: context.appCardColor,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _borderColor),
+                  border: Border.all(color: context.appBorderColor),
                 ),
                 child: IconButton(
                   padding: EdgeInsets.zero,
+                  tooltip:
+                      AppLocalizations.of(context)!.restoreDefaultCategories,
                   icon: Icon(
                     Icons.restore,
                     size: 20,
-                    color: _textPrimary,
+                    color: context.appTextPrimary,
                   ),
                   onPressed: () {
                     showDialog(
                       context: context,
                       builder: (context) => AlertDialog(
-                        backgroundColor: _cardColor,
+                        backgroundColor: context.appCardColor,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),
                         ),
@@ -206,23 +195,22 @@ class _CategoriesPageState extends State<CategoriesPage> {
                           AppLocalizations.of(context)!
                               .restoreDefaultCategories,
                           style: TextStyle(
-                            color: _textPrimary,
+                            color: context.appTextPrimary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         content: Text(
                           AppLocalizations.of(context)!
                               .restoreDefaultCategories,
-                          style: TextStyle(color: _textSecondary),
+                          style: TextStyle(color: context.appTextSecondary),
                         ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context),
                             style: TextButton.styleFrom(
-                              foregroundColor: _textSecondary,
+                              foregroundColor: context.appTextSecondary,
                             ),
-                            child:
-                                Text(AppLocalizations.of(context)!.cancel),
+                            child: Text(AppLocalizations.of(context)!.cancel),
                           ),
                           TextButton(
                             onPressed: () {
@@ -232,8 +220,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                             style: TextButton.styleFrom(
                               foregroundColor: _primaryBlue,
                             ),
-                            child:
-                                Text(AppLocalizations.of(context)!.restore),
+                            child: Text(AppLocalizations.of(context)!.restore),
                           ),
                         ],
                       ),
@@ -253,9 +240,9 @@ class _CategoriesPageState extends State<CategoriesPage> {
             child: Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: _cardColor,
+                color: context.appCardColor,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: _borderColor),
+                border: Border.all(color: context.appBorderColor),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.03),
@@ -272,24 +259,24 @@ class _CategoriesPageState extends State<CategoriesPage> {
                     TextFormField(
                       controller: _nameController,
                       style: TextStyle(
-                        color: _textPrimary,
+                        color: context.appTextPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                       ),
                       decoration: InputDecoration(
                         hintText: AppLocalizations.of(context)!.addCategory,
                         hintStyle: TextStyle(
-                          color: _textSecondary,
+                          color: context.appTextSecondary,
                           fontSize: 15,
                           fontWeight: FontWeight.w400,
                         ),
                         prefixIcon: Icon(
                           Icons.category_outlined,
-                          color: _textSecondary,
+                          color: context.appTextSecondary,
                           size: 20,
                         ),
                         filled: true,
-                        fillColor: _isDarkMode
+                        fillColor: context.isDark
                             ? Colors.white.withOpacity(0.05)
                             : const Color(0xFFF7F8FC),
                         border: OutlineInputBorder(
@@ -298,7 +285,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: _borderColor),
+                          borderSide: BorderSide(color: context.appBorderColor),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -360,9 +347,9 @@ class _CategoriesPageState extends State<CategoriesPage> {
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        child: const Text(
-                          'Ajouter',
-                          style: TextStyle(
+                        child: Text(
+                          AppLocalizations.of(context)!.add,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -407,7 +394,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
-                            color: _textPrimary,
+                            color: context.appTextPrimary,
                             letterSpacing: -0.3,
                           ),
                         ),
@@ -416,7 +403,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                           AppLocalizations.of(context)!.addYourFirstCategory,
                           style: TextStyle(
                             fontSize: 14,
-                            color: _textSecondary,
+                            color: context.appTextSecondary,
                           ),
                         ),
                       ],
@@ -434,9 +421,9 @@ class _CategoriesPageState extends State<CategoriesPage> {
                     return Container(
                       margin: const EdgeInsets.only(bottom: 10),
                       decoration: BoxDecoration(
-                        color: _cardColor,
+                        color: context.appCardColor,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: _borderColor),
+                        border: Border.all(color: context.appBorderColor),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.02),
@@ -471,15 +458,14 @@ class _CategoriesPageState extends State<CategoriesPage> {
                             // Text content
                             Expanded(
                               child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     category.name,
                                     style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
-                                      color: _textPrimary,
+                                      color: context.appTextPrimary,
                                       letterSpacing: -0.2,
                                     ),
                                   ),
@@ -492,7 +478,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                                             .customCategory,
                                     style: TextStyle(
                                       fontSize: 13,
-                                      color: _textSecondary,
+                                      color: context.appTextSecondary,
                                       fontWeight: FontWeight.w400,
                                     ),
                                   ),
@@ -509,6 +495,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                               ),
                               child: IconButton(
                                 padding: EdgeInsets.zero,
+                                tooltip: AppLocalizations.of(context)!.delete,
                                 icon: Icon(
                                   Icons.delete_outline,
                                   size: 20,
@@ -518,23 +505,22 @@ class _CategoriesPageState extends State<CategoriesPage> {
                                   showDialog(
                                     context: context,
                                     builder: (context) => AlertDialog(
-                                      backgroundColor: _cardColor,
+                                      backgroundColor: context.appCardColor,
                                       shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(18),
+                                        borderRadius: BorderRadius.circular(18),
                                       ),
                                       title: Text(
                                         AppLocalizations.of(context)!
                                             .deleteConfirmationTitle,
                                         style: TextStyle(
-                                          color: _textPrimary,
+                                          color: context.appTextPrimary,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                       content: Text(
                                         '${AppLocalizations.of(context)!.deleteConfirmationContent} ${category.name}" ?',
                                         style: TextStyle(
-                                          color: _textSecondary,
+                                          color: context.appTextSecondary,
                                         ),
                                       ),
                                       actions: [
@@ -543,18 +529,16 @@ class _CategoriesPageState extends State<CategoriesPage> {
                                               Navigator.pop(context),
                                           style: TextButton.styleFrom(
                                             foregroundColor:
-                                                _textSecondary,
+                                                context.appTextSecondary,
                                           ),
                                           child: Text(
-                                              AppLocalizations.of(
-                                                      context)!
+                                              AppLocalizations.of(context)!
                                                   .cancel),
                                         ),
                                         TextButton(
                                           onPressed: () async {
                                             await SupabaseDataService()
-                                                .deleteCategory(
-                                                    category);
+                                                .deleteCategory(category);
                                             if (!context.mounted) return;
                                             Navigator.pop(context);
                                           },
@@ -562,8 +546,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                                             foregroundColor: _redAccent,
                                           ),
                                           child: Text(
-                                              AppLocalizations.of(
-                                                      context)!
+                                              AppLocalizations.of(context)!
                                                   .delete),
                                         ),
                                       ],

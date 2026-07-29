@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:spendwise/services/auth_service.dart';
 
@@ -15,13 +14,6 @@ class LocaleProvider extends ChangeNotifier {
       _locale = newLocale;
       notifyListeners();
     }
-  }
-
-  Future<void> loadFromProfile() async {
-    try {
-      final data = await AuthService().getProfile();
-      applyFromData(data);
-    } catch (e) { debugPrint('LocaleProvider.loadFromProfile: $e'); }
   }
 
   Future<void> setLocale(Locale locale) async {

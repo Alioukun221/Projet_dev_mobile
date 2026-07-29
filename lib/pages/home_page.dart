@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/pages/add_transaction_page.dart';
+import 'package:spendwise/pages/ai_finance_page.dart';
 import 'package:spendwise/pages/dashboard_page.dart';
 import 'package:spendwise/pages/about_page.dart';
 import 'package:spendwise/pages/planning_page.dart';
@@ -17,6 +19,8 @@ import 'package:spendwise/providers/locale_provider.dart';
 import 'package:spendwise/providers/profile_provider.dart';
 import 'package:spendwise/providers/theme_provider.dart';
 import 'package:spendwise/services/auth_service.dart';
+import 'package:spendwise/services/connectivity_service.dart';
+import 'package:spendwise/services/local_cache_service.dart';
 import 'package:spendwise/services/notification_transaction_service.dart';
 import 'package:spendwise/services/supabase_data_service.dart';
 import 'package:spendwise/theme/app_theme.dart';
@@ -32,6 +36,33 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   bool _isDarkMode = false;
+  StreamSubscription? _syncResultSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncResultSub = SupabaseDataService().syncResultStream.listen((result) {
+      if (!mounted) return;
+      final count = result.contains(':') ? result.split(':')[1] : '?';
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.syncPartialFailure(count)),
+          backgroundColor: Colors.orange.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _syncResultSub?.cancel();
+    super.dispose();
+  }
 
   final List<Widget> _pages = [
     const DashboardPage(),
@@ -60,12 +91,77 @@ class _HomeScreenState extends State<HomeScreen> {
         extendBody: true,
         appBar: _buildAppBar(textColor, subtextColor, cardColor),
         drawer: _buildDrawer(bg, cardColor, textColor, subtextColor),
-        body: _pages[_selectedIndex],
+        body: Column(
+          children: [
+            _buildSyncBanner(),
+            Expanded(child: _pages[_selectedIndex]),
+          ],
+        ),
         bottomNavigationBar:
             _buildBottomNav(bg, cardColor, textColor, subtextColor),
         floatingActionButton: _buildFAB(),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
+    );
+  }
+
+  Widget _buildSyncBanner() {
+    return StreamBuilder<bool>(
+      stream: ConnectivityService.instance.onlineStream,
+      initialData: ConnectivityService.instance.isOnline,
+      builder: (context, onlineSnap) {
+        final isOnline = onlineSnap.data ?? true;
+        return StreamBuilder<int>(
+          stream: LocalCacheService.instance.pendingOpsStream,
+          initialData: LocalCacheService.instance.pendingOpsCount,
+          builder: (context, pendingSnap) {
+            final pending = pendingSnap.data ?? 0;
+            if (isOnline && pending == 0) return const SizedBox.shrink();
+            final bgColor =
+                isOnline ? Colors.orange.shade700 : const Color(0xFFEF4444);
+            final l10n = AppLocalizations.of(context)!;
+            final String label;
+            if (!isOnline && pending > 0) {
+              label = l10n.syncOfflineWithPending(pending);
+            } else if (!isOnline) {
+              label = l10n.syncOffline;
+            } else {
+              label = l10n.syncPendingSync(pending);
+            }
+            return Container(
+              width: double.infinity,
+              color: bgColor,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (isOnline && pending > 0)
+                    const SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  else
+                    const Icon(Icons.wifi_off_rounded,
+                        color: Colors.white, size: 14),
+                  const SizedBox(width: 8),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -93,21 +189,18 @@ class _HomeScreenState extends State<HomeScreen> {
             GestureDetector(
               onTap: () => Scaffold.of(context).openDrawer(),
               child: Builder(builder: (_) {
-                final avatar = ProfilePage.getAvatarById(
-                  profileProvider.profile?.avatar ?? 'avatar_1',
-                );
                 return Container(
                   width: 46,
                   height: 46,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [avatar.color, avatar.color.withOpacity(0.7)],
-                    ),
+                    color: _isDarkMode
+                        ? Colors.white.withOpacity(0.08)
+                        : Colors.black.withOpacity(0.04),
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: Icon(
-                    avatar.icon,
-                    color: Colors.white,
+                    Icons.menu_rounded,
+                    color: textColor,
                     size: 24,
                   ),
                 );
@@ -149,8 +242,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) =>
-                        PendingTransactionsPage(isDarkMode: _isDarkMode),
+                    builder: (_) => PendingTransactionsPage(),
                   ),
                 );
               },
@@ -235,7 +327,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => ProfilePage(isDarkMode: _isDarkMode),
+                    builder: (_) => ProfilePage(),
                   ),
                 );
               },
@@ -339,8 +431,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        CategoriesPage(isDarkMode: _isDarkMode),
+                    builder: (context) => CategoriesPage(),
                   ),
                 );
               },
@@ -355,8 +446,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        NotificationSettingsPage(isDarkMode: _isDarkMode),
+                    builder: (context) => NotificationSettingsPage(),
+                  ),
+                );
+              },
+            ),
+            _buildDrawerItem(
+              icon: Icons.auto_awesome_rounded,
+              label: 'Assistant finances',
+              textColor: textColor,
+              subtextColor: subtextColor,
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AiFinancePage(),
                   ),
                 );
               },
@@ -371,7 +476,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => AboutPage(isDarkMode: _isDarkMode),
+                    builder: (context) => AboutPage(),
                   ),
                 );
               },
@@ -532,8 +637,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 onTap: () async {
                   Navigator.pop(context); // close drawer
+                  final userId = AuthService().currentUser?.id;
                   SupabaseDataService().reset();
                   Provider.of<ProfileProvider>(context, listen: false).clear();
+                  await LocalCacheService.instance.clearUserData(userId);
                   await AuthService().signOut();
                   if (!mounted) return;
                   Navigator.pushAndRemoveUntil(
@@ -593,11 +700,11 @@ class _HomeScreenState extends State<HomeScreen> {
             color: textColor,
           ),
         ),
-        trailing: Icon(
-          Icons.chevron_right_rounded,
-          color: subtextColor,
-          size: 20,
-        ),
+        // trailing: Icon(
+        //   Icons.chevron_right_rounded,
+        //   color: subtextColor,
+        //   size: 20,
+        // ),
         onTap: onTap,
       ),
     );
@@ -730,7 +837,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => AddTransactionPage(isDarkMode: _isDarkMode),
+              builder: (_) => AddTransactionPage(),
             ),
           );
         },

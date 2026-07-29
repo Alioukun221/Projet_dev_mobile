@@ -13,6 +13,7 @@ class TodoNotificationService {
   final _plugin = FlutterLocalNotificationsPlugin();
   static const _channelId = 'todo_reminders';
   static const _channelName = 'Rappels Tâches';
+  static const _defaultTimeZone = 'Africa/Dakar';
 
   bool _initialized = false;
 
@@ -21,17 +22,15 @@ class TodoNotificationService {
     _initialized = true;
 
     tz_data.initializeTimeZones();
+    tz.setLocalLocation(tz.getLocation(_defaultTimeZone));
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
     const initSettings = InitializationSettings(android: androidSettings);
     await _plugin.initialize(initSettings);
 
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
-    await androidPlugin?.requestNotificationsPermission();
-    try {
-      await androidPlugin?.requestExactAlarmsPermission();
-    } catch (e) { debugPrint('TodoNotificationService.init exactAlarms: $e'); }
 
     // Create notification channel
     const channel = AndroidNotificationChannel(
@@ -42,9 +41,15 @@ class TodoNotificationService {
     await androidPlugin?.createNotificationChannel(channel);
   }
 
-  Future<void> scheduleReminder(TodoTask task) async {
+  Future<void> scheduleReminder(
+    TodoTask task, {
+    bool requestPermissions = true,
+  }) async {
     if (task.id == null) return;
     if (task.dueDate.isBefore(DateTime.now())) return;
+    if (requestPermissions) {
+      await _requestReminderPermissions();
+    }
 
     final scheduledDate = tz.TZDateTime(
       tz.local,
@@ -64,7 +69,7 @@ class TodoNotificationService {
     const notifDetails = NotificationDetails(android: androidDetails);
 
     await _plugin.zonedSchedule(
-      task.id.hashCode,
+      _notificationId(task.id!),
       task.title,
       '${task.isDeposit ? "+" : "-"} ${task.amount.toStringAsFixed(0)}',
       scheduledDate,
@@ -77,15 +82,37 @@ class TodoNotificationService {
   }
 
   Future<void> cancelReminder(String todoId) async {
-    await _plugin.cancel(todoId.hashCode);
+    await _plugin.cancel(_notificationId(todoId));
   }
 
   Future<void> rescheduleAll(List<TodoTask> todos) async {
     await _plugin.cancelAll();
     for (final todo in todos) {
       if (!todo.isCompleted) {
-        await scheduleReminder(todo);
+        await scheduleReminder(todo, requestPermissions: false);
       }
     }
+  }
+
+  AndroidFlutterLocalNotificationsPlugin? get _androidPlugin =>
+      _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+
+  Future<void> _requestReminderPermissions() async {
+    await _androidPlugin?.requestNotificationsPermission();
+    try {
+      await _androidPlugin?.requestExactAlarmsPermission();
+    } catch (e) {
+      debugPrint('TodoNotificationService exactAlarms: $e');
+    }
+  }
+
+  int _notificationId(String id) {
+    var hash = 0x811c9dc5;
+    for (final unit in id.codeUnits) {
+      hash ^= unit;
+      hash = (hash * 0x01000193) & 0x7fffffff;
+    }
+    return hash;
   }
 }

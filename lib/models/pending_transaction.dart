@@ -11,6 +11,7 @@ class PendingTransaction {
   final String rawContent;
   final DateTime date;
   final DateTime createdAt;
+  final List<String> idempotencyKeys;
   String status; // 'pending', 'approved', 'rejected'
 
   PendingTransaction({
@@ -23,10 +24,14 @@ class PendingTransaction {
     required this.rawContent,
     required this.date,
     required this.createdAt,
+    this.idempotencyKeys = const [],
     this.status = 'pending',
   });
 
-  factory PendingTransaction.fromParsed(ParsedTransaction parsed) {
+  factory PendingTransaction.fromParsed(
+    ParsedTransaction parsed, {
+    List<String> idempotencyKeys = const [],
+  }) {
     return PendingTransaction(
       id: '${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(999999)}',
       type: parsed.type,
@@ -37,6 +42,7 @@ class PendingTransaction {
       rawContent: parsed.rawContent,
       date: parsed.date,
       createdAt: DateTime.now(),
+      idempotencyKeys: idempotencyKeys,
     );
   }
 
@@ -50,6 +56,7 @@ class PendingTransaction {
         'raw_content': rawContent,
         'date': date.toIso8601String(),
         'created_at': createdAt.toIso8601String(),
+        'idempotency_keys': idempotencyKeys,
         'status': status,
       };
 
@@ -64,6 +71,10 @@ class PendingTransaction {
       rawContent: json['raw_content'] as String,
       date: DateTime.parse(json['date'] as String),
       createdAt: DateTime.parse(json['created_at'] as String),
+      idempotencyKeys: (json['idempotency_keys'] as List?)
+              ?.map((key) => key.toString())
+              .toList() ??
+          const [],
       status: json['status'] as String? ?? 'pending',
     );
   }

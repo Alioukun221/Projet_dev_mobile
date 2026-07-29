@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:spendwise/services/auth_service.dart';
 
@@ -13,13 +12,6 @@ class ThemeProvider extends ChangeNotifier {
     final theme = data['preferred_theme'] as String? ?? 'light';
     _themeMode = theme == 'dark' ? ThemeMode.dark : ThemeMode.light;
     notifyListeners();
-  }
-
-  Future<void> loadFromProfile() async {
-    try {
-      final data = await AuthService().getProfile();
-      applyFromData(data);
-    } catch (e) { debugPrint('ThemeProvider.loadFromProfile: $e'); }
   }
 
   Future<void> toggleTheme() async {

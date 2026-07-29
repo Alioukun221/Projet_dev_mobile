@@ -9,6 +9,7 @@ import 'package:spendwise/providers/profile_provider.dart';
 import 'package:spendwise/providers/theme_provider.dart';
 import 'package:spendwise/services/auth_service.dart';
 import 'package:spendwise/services/notification_transaction_service.dart';
+import 'package:spendwise/services/sms_transaction_service.dart';
 import 'package:spendwise/services/supabase_data_service.dart';
 import 'package:spendwise/services/todo_notification_service.dart';
 import 'package:spendwise/theme/app_theme.dart';
@@ -53,23 +54,26 @@ class _SplashScreenState extends State<SplashScreen>
     final isLoggedIn = AuthService().isLoggedIn;
 
     if (isLoggedIn) {
-      // Initialize Supabase data service
-      await SupabaseDataService().init();
+      try {
+        await SupabaseDataService().init();
+        await NotificationTransactionService().init();
+        await SmsTransactionService().init();
 
-      // Initialize notification listening service
-      await NotificationTransactionService().init();
+        final todos = await SupabaseDataService().getTodos();
+        await TodoNotificationService().init();
+        await TodoNotificationService().rescheduleAll(todos);
 
-      // Initialize todo notification service and reschedule all reminders
-      final todos = await SupabaseDataService().getTodos();
-      await TodoNotificationService().init();
-      await TodoNotificationService().rescheduleAll(todos);
-
-      // Load user preferences — single getProfile() call for all providers
-      final profileData = await AuthService().getProfile();
-      if (mounted) {
-        Provider.of<ProfileProvider>(context, listen: false).applyFromData(profileData);
-        Provider.of<ThemeProvider>(context, listen: false).applyFromData(profileData);
-        Provider.of<LocaleProvider>(context, listen: false).applyFromData(profileData);
+        final profileData = await AuthService().getProfile();
+        if (mounted) {
+          Provider.of<ProfileProvider>(context, listen: false)
+              .applyFromData(profileData);
+          Provider.of<ThemeProvider>(context, listen: false)
+              .applyFromData(profileData);
+          Provider.of<LocaleProvider>(context, listen: false)
+              .applyFromData(profileData);
+        }
+      } catch (e) {
+        debugPrint('SplashScreen._navigateBasedOnAuth: $e');
       }
     }
 
@@ -91,7 +95,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.primaryColor,
+      backgroundColor: Colors.white,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -100,13 +104,13 @@ class _SplashScreenState extends State<SplashScreen>
             ScaleTransition(
               scale: _animation,
               child: Image.asset(
-                'assets/images/logo_2-removebg.png',
+                'assets/images/new_logo-removebg-removenm.png',
                 width: 180,
                 height: 180,
-                color: Colors.white,
+                fit: BoxFit.contain,
               ),
             ),
-            const SizedBox(height: AppTheme.spacingS),
+            // const SizedBox(height: AppTheme.spacingS),
 
             // Tagline
             FadeTransition(
@@ -114,7 +118,7 @@ class _SplashScreenState extends State<SplashScreen>
               child: Text(
                 AppLocalizations.of(context)!.splashText,
                 style: AppTheme.bodyLarge.copyWith(
-                  color: Colors.white.withOpacity(0.8),
+                  color: AppTheme.primaryColor,
                 ),
               ),
             ),

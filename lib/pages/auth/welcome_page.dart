@@ -1,9 +1,15 @@
+// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/pages/auth/login_page.dart';
 import 'package:spendwise/pages/auth/register_page.dart';
+import 'package:spendwise/pages/home_page.dart';
+import 'package:spendwise/providers/locale_provider.dart';
+import 'package:spendwise/providers/profile_provider.dart';
 import 'package:spendwise/providers/theme_provider.dart';
+import 'package:spendwise/services/auth_service.dart';
+import 'package:spendwise/services/supabase_data_service.dart';
 import 'package:spendwise/theme/app_theme.dart';
 
 class WelcomePage extends StatefulWidget {
@@ -18,6 +24,7 @@ class _WelcomePageState extends State<WelcomePage>
   late AnimationController _controller;
   late Animation<double> _fadeIn;
   late Animation<Offset> _slideUp;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -40,28 +47,57 @@ class _WelcomePageState extends State<WelcomePage>
     super.dispose();
   }
 
+  Future<void> _handleGoogleLogin() async {
+    setState(() => _isLoading = true);
+    try {
+      await AuthService().signInWithGoogle();
+      await SupabaseDataService().init();
+      if (!mounted) return;
+      final profileData = await AuthService().getProfile();
+      Provider.of<ProfileProvider>(context, listen: false)
+          .applyFromData(profileData);
+      Provider.of<ThemeProvider>(context, listen: false)
+          .applyFromData(profileData);
+      Provider.of<LocaleProvider>(context, listen: false)
+          .applyFromData(profileData);
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString().replaceFirst('Exception: ', '')),
+        backgroundColor: AppTheme.errorColor,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isDark = Provider.of<ThemeProvider>(context).isDarkMode;
     final l10n = AppLocalizations.of(context)!;
 
-    final bgGradient = isDark
-        ? const [Color(0xFF0B0E2D), Color(0xFF0A0A1A)]
-        : const [Color(0xFFFFFFFF), Color(0xFFF0F2F8)];
-    final textColor = isDark ? Colors.white : AppTheme.textPrimaryColor;
+    final bg = isDark ? AppTheme.darkBgColor : const Color(0xFFF7F8FC);
+    final bgGradientEnd = isDark ? AppTheme.darkSurfaceColor : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF1A1D29);
     final subtextColor =
-        isDark ? Colors.white.withOpacity(0.5) : AppTheme.textSecondaryColor;
+        isDark ? AppTheme.darkTextSecondaryColor : const Color(0xFF6B7280);
     final btnBg = isDark ? AppTheme.accentColor : AppTheme.primaryColor;
-    final btnFg = isDark ? const Color(0xFF0A0A1A) : Colors.white;
-    final socialBorder =
-        isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.08);
-    final socialBg = isDark
-        ? Colors.white.withOpacity(0.05)
-        : Colors.black.withOpacity(0.03);
-    final socialTextColor = isDark ? Colors.white : AppTheme.textPrimaryColor;
+    final btnFg = isDark ? AppTheme.darkBgColor : Colors.white;
+    final borderColor =
+        isDark ? AppTheme.darkBorderColor : Colors.black.withOpacity(0.08);
+    final socialBg = isDark ? AppTheme.darkCardColor : Colors.white;
     final linkColor = isDark ? AppTheme.accentColor : AppTheme.primaryColor;
-    final glowColor1 = const Color(0xFF005EFF).withOpacity(isDark ? 0.3 : 0.12);
+    final glowColor1 = AppTheme.primaryColor.withOpacity(isDark ? 0.3 : 0.12);
     final glowColor2 = const Color(0xFF7B2FFF).withOpacity(isDark ? 0.1 : 0.05);
 
     return Scaffold(
@@ -72,12 +108,12 @@ class _WelcomePageState extends State<WelcomePage>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: bgGradient,
+            colors: [bg, bgGradientEnd],
           ),
         ),
         child: Stack(
           children: [
-            // Background glow effect
+            // Background glow
             Positioned(
               top: -size.height * 0.15,
               left: -size.width * 0.3,
@@ -93,7 +129,6 @@ class _WelcomePageState extends State<WelcomePage>
               ),
             ),
 
-            // Content
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -106,10 +141,10 @@ class _WelcomePageState extends State<WelcomePage>
                     FadeTransition(
                       opacity: _fadeIn,
                       child: Image.asset(
-                        'assets/images/logo_2-removebg.png',
-                        width: 100,
-                        height: 100,
-                        color: isDark ? Colors.white : AppTheme.primaryColor,
+                        'assets/images/new_logo-removebg.png',
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.contain,
                       ),
                     ),
 
@@ -161,14 +196,14 @@ class _WelcomePageState extends State<WelcomePage>
                               width: double.infinity,
                               height: 56,
                               child: ElevatedButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const LoginPage(),
-                                    ),
-                                  );
-                                },
+                                onPressed: _isLoading
+                                    ? null
+                                    : () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const LoginPage()),
+                                        ),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: btnBg,
                                   foregroundColor: btnFg,
@@ -188,31 +223,46 @@ class _WelcomePageState extends State<WelcomePage>
                             ),
                             const SizedBox(height: 16),
 
-                            // Social buttons row
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _SocialButton(
-                                    icon: Icons.g_mobiledata_rounded,
-                                    label: 'Google',
-                                    borderColor: socialBorder,
-                                    bgColor: socialBg,
-                                    textColor: socialTextColor,
-                                    onTap: () {},
+                            // Google button — full width
+                            SizedBox(
+                              width: double.infinity,
+                              height: 56,
+                              child: OutlinedButton.icon(
+                                onPressed:
+                                    _isLoading ? null : _handleGoogleLogin,
+                                style: OutlinedButton.styleFrom(
+                                  backgroundColor: socialBg,
+                                  foregroundColor: textColor,
+                                  side: BorderSide(color: borderColor),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                icon: _isLoading
+                                    ? SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: textColor,
+                                        ),
+                                      )
+                                    : Image(
+                                        image: const AssetImage(
+                                            'assets/images/logo_google.png'),
+                                        width: 22,
+                                        height: 22,
+                                      ),
+                                label: Text(
+                                  'Google',
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _SocialButton(
-                                    icon: Icons.apple_rounded,
-                                    label: 'Apple',
-                                    borderColor: socialBorder,
-                                    bgColor: socialBg,
-                                    textColor: socialTextColor,
-                                    onTap: () {},
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
 
                             const SizedBox(height: 24),
@@ -229,14 +279,14 @@ class _WelcomePageState extends State<WelcomePage>
                                   ),
                                 ),
                                 GestureDetector(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const RegisterPage(),
-                                      ),
-                                    );
-                                  },
+                                  onTap: _isLoading
+                                      ? null
+                                      : () => Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: (_) =>
+                                                    const RegisterPage()),
+                                          ),
                                   child: Text(
                                     l10n.authSignUp,
                                     style: TextStyle(
@@ -256,54 +306,6 @@ class _WelcomePageState extends State<WelcomePage>
                     ),
                   ],
                 ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SocialButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color borderColor;
-  final Color bgColor;
-  final Color textColor;
-  final VoidCallback onTap;
-
-  const _SocialButton({
-    required this.icon,
-    required this.label,
-    required this.borderColor,
-    required this.bgColor,
-    required this.textColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 56,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderColor),
-          color: bgColor,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: textColor, size: 24),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: textColor,
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
               ),
             ),
           ],

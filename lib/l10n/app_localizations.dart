@@ -63,7 +63,8 @@ import 'app_localizations_fr.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale)
+      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -71,7 +72,8 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations);
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -83,7 +85,8 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
     delegate,
     GlobalMaterialLocalizations.delegate,
     GlobalCupertinoLocalizations.delegate,
@@ -174,6 +177,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remaining'**
   String get remaining;
+
+  /// No description provided for @pleaseEnterName.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a name'**
+  String get pleaseEnterName;
+
+  /// No description provided for @title.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get title;
 
   /// No description provided for @pleaseEnterAmountInvalid.
   ///
@@ -397,6 +412,12 @@ abstract class AppLocalizations {
   /// **'Breakdown'**
   String get breakdown;
 
+  /// No description provided for @expensesByCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses by category'**
+  String get expensesByCategory;
+
   /// No description provided for @appDescription.
   ///
   /// In en, this message translates to:
@@ -517,6 +538,42 @@ abstract class AppLocalizations {
   /// **'Data stored locally for full privacy.'**
   String get featureLocalStorageDescription;
 
+  /// No description provided for @featureOfflineSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline Mode'**
+  String get featureOfflineSync;
+
+  /// No description provided for @featureOfflineSyncDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the app without internet. Changes sync automatically when you reconnect.'**
+  String get featureOfflineSyncDescription;
+
+  /// No description provided for @featureTodos.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned Tasks'**
+  String get featureTodos;
+
+  /// No description provided for @featureTodosDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule recurring tasks with reminders and automatic transaction creation.'**
+  String get featureTodosDescription;
+
+  /// No description provided for @featureNotifSms.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS Auto-capture'**
+  String get featureNotifSms;
+
+  /// No description provided for @featureNotifSmsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatically captures Wave and Orange Money transactions from your notifications.'**
+  String get featureNotifSmsDescription;
+
   /// No description provided for @developer.
   ///
   /// In en, this message translates to:
@@ -558,6 +615,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No category'**
   String get noCategory;
+
+  /// No description provided for @otherCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get otherCategory;
 
   /// No description provided for @addYourFirstCategory.
   ///
@@ -1122,9 +1185,28 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Today'**
   String get todayTasks;
+  String get thisWeekTasks;
+  String get laterTasks;
+  String get editTransaction;
+  String get deleteTransactionConfirmation;
+  String get update;
+  String get noTransactions;
+  String get addFirstTransaction;
+  String get syncOffline;
+  String syncOfflineWithPending(int count);
+  String syncPendingSync(int count);
+  String syncPartialFailure(String count);
+  String get andXMoreCategories;
+  String get processingError;
+  String deleteTodoContent(String title);
+  String get notifConsentTitle;
+  String get notifConsentBody;
+  String get notifConsentAccept;
+  String get notifConsentDecline;
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -1133,26 +1215,27 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['en', 'es', 'fr'].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['en', 'es', 'fr'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
-
-
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en': return AppLocalizationsEn();
-    case 'es': return AppLocalizationsEs();
-    case 'fr': return AppLocalizationsFr();
+    case 'en':
+      return AppLocalizationsEn();
+    case 'es':
+      return AppLocalizationsEs();
+    case 'fr':
+      return AppLocalizationsFr();
   }
 
   throw FlutterError(
-    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-    'an issue with the localizations generation tool. Please file an issue '
-    'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.'
-  );
+      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+      'an issue with the localizations generation tool. Please file an issue '
+      'on GitHub with a reproducible sample app and the gen-l10n configuration '
+      'that was used.');
 }

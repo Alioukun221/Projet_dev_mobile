@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:spendwise/constants/app_colors.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/models/profile.dart';
 import 'package:spendwise/providers/profile_provider.dart';
 import 'package:spendwise/theme/app_theme.dart';
 
 class ProfilePage extends StatefulWidget {
-  final bool isDarkMode;
-
-  const ProfilePage({super.key, required this.isDarkMode});
+  const ProfilePage({super.key});
 
   static const List<AvatarOption> avatars = [
     AvatarOption('avatar_1', Icons.person_rounded, Color(0xFF005EFF)),
@@ -18,7 +17,8 @@ class ProfilePage extends StatefulWidget {
     AvatarOption('avatar_5', Icons.face_4_rounded, Color(0xFFFF9800)),
     AvatarOption('avatar_6', Icons.face_5_rounded, Color(0xFF4CAF50)),
     AvatarOption('avatar_7', Icons.face_6_rounded, Color(0xFF2196F3)),
-    AvatarOption('avatar_8', Icons.sentiment_very_satisfied_rounded, Color(0xFF9C27B0)),
+    AvatarOption(
+        'avatar_8', Icons.sentiment_very_satisfied_rounded, Color(0xFF9C27B0)),
     AvatarOption('avatar_9', Icons.emoji_emotions_rounded, Color(0xFFFF5722)),
     AvatarOption('avatar_10', Icons.mood_rounded, Color(0xFF009688)),
     AvatarOption('avatar_11', Icons.tag_faces_rounded, Color(0xFF673AB7)),
@@ -53,13 +53,15 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _selectAvatar(String avatarId) async {
     setState(() => _selectedAvatar = avatarId);
-    await Provider.of<ProfileProvider>(context, listen: false).updateAvatar(avatarId);
+    await Provider.of<ProfileProvider>(context, listen: false)
+        .updateAvatar(avatarId);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppLocalizations.of(context)!.profileUpdated),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
     }
@@ -67,10 +69,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final bg = widget.isDarkMode ? AppTheme.darkBgColor : const Color(0xFFF7F8FC);
-    final cardColor = widget.isDarkMode ? AppTheme.darkCardColor : Colors.white;
-    final textColor = widget.isDarkMode ? Colors.white : const Color(0xFF1A1D29);
-    final subtextColor = widget.isDarkMode ? AppTheme.darkTextSecondaryColor : const Color(0xFF6B7280);
+    final bg = context.appBgColor;
+    final cardColor = context.appCardColor;
+    final textColor = context.appTextPrimary;
+    final subtextColor = context.appTextSecondary;
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -80,7 +82,8 @@ class _ProfilePageState extends State<ProfilePage> {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: textColor),
+          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+          icon: Icon(Icons.arrow_back_ios_rounded, color: textColor),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -95,24 +98,25 @@ class _ProfilePageState extends State<ProfilePage> {
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Column(
-                children: [
-                  // Avatar display
-                  _buildAvatarHeader(cardColor, textColor, subtextColor),
-                  const SizedBox(height: 24),
-                  // User info card
-                  _buildInfoCard(cardColor, textColor, subtextColor, l10n),
-                  const SizedBox(height: 24),
-                  // Avatar picker
-                  _buildAvatarPicker(cardColor, textColor, subtextColor, l10n),
-                ],
-              ),
-            ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Column(
+          children: [
+            // Avatar display
+            _buildAvatarHeader(cardColor, textColor, subtextColor),
+            const SizedBox(height: 24),
+            // User info card
+            _buildInfoCard(cardColor, textColor, subtextColor, l10n),
+            const SizedBox(height: 24),
+            // Avatar picker
+            _buildAvatarPicker(cardColor, textColor, subtextColor, l10n),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildAvatarHeader(Color cardColor, Color textColor, Color subtextColor) {
+  Widget _buildAvatarHeader(
+      Color cardColor, Color textColor, Color subtextColor) {
     final avatar = ProfilePage.getAvatarById(_selectedAvatar);
     return Column(
       children: [
@@ -159,7 +163,8 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildInfoCard(Color cardColor, Color textColor, Color subtextColor, AppLocalizations l10n) {
+  Widget _buildInfoCard(Color cardColor, Color textColor, Color subtextColor,
+      AppLocalizations l10n) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -168,7 +173,7 @@ class _ProfilePageState extends State<ProfilePage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(widget.isDarkMode ? 0.2 : 0.05),
+            color: Colors.black.withOpacity(context.isDark ? 0.2 : 0.05),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -184,7 +189,9 @@ class _ProfilePageState extends State<ProfilePage> {
             subtextColor,
           ),
           Divider(
-            color: widget.isDarkMode ? AppTheme.darkBorderColor : Colors.black.withOpacity(0.06),
+            color: context.isDark
+                ? AppTheme.darkBorderColor
+                : Colors.black.withOpacity(0.06),
             height: 24,
           ),
           _buildInfoRow(
@@ -199,7 +206,8 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value, Color textColor, Color subtextColor) {
+  Widget _buildInfoRow(IconData icon, String label, String value,
+      Color textColor, Color subtextColor) {
     return Row(
       children: [
         Container(
@@ -239,7 +247,8 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildAvatarPicker(Color cardColor, Color textColor, Color subtextColor, AppLocalizations l10n) {
+  Widget _buildAvatarPicker(Color cardColor, Color textColor,
+      Color subtextColor, AppLocalizations l10n) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -248,7 +257,7 @@ class _ProfilePageState extends State<ProfilePage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(widget.isDarkMode ? 0.2 : 0.05),
+            color: Colors.black.withOpacity(context.isDark ? 0.2 : 0.05),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),

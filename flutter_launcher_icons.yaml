@@ -1,0 +1,19 @@
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/new_logo.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/new_logo-removebg-removenm.png"
+  web:
+    generate: true
+    image_path: "assets/images/new_logo-removebg-removenm.png"
+    background_color: "#FFFFFF"
+    theme_color: "#FFFFFF"
+  windows:
+    generate: true
+    image_path: "assets/images/new_logo-removebg-removenm.png"
+    icon_size: 256
+  macos:
+    generate: true
+    image_path: "assets/images/new_logo-removebg-removenm.png"

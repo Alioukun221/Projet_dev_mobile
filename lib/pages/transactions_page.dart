@@ -1,11 +1,15 @@
 // ignore_for_file: use_key_in_widget_constructors
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:spendwise/constants/category_icons.dart';
+import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/models/transaction.dart';
 import 'package:spendwise/pages/edit_transaction_page.dart';
 import 'package:spendwise/services/supabase_data_service.dart';
+import 'package:spendwise/constants/app_colors.dart';
 import 'package:spendwise/theme/app_theme.dart';
+import 'package:spendwise/utils/app_format.dart';
+import 'package:spendwise/widgets/app_empty_state.dart';
 
 class TransactionsPage extends StatefulWidget {
   const TransactionsPage({super.key});
@@ -15,37 +19,32 @@ class TransactionsPage extends StatefulWidget {
 }
 
 class _TransactionsPageState extends State<TransactionsPage> {
-  // --- Design system helpers ---
-  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+  int _visibleCount = 50;
+  static const _pageSize = 50;
+  late final ScrollController _scrollController;
 
-  Color get _backgroundColor =>
-      _isDark ? AppTheme.darkBgColor : const Color(0xFFF7F8FC);
-  Color get _cardColor =>
-      _isDark ? AppTheme.darkCardColor : Colors.white;
-  Color get _textPrimary =>
-      _isDark ? Colors.white : const Color(0xFF1A1D29);
-  Color get _textSecondary =>
-      _isDark ? AppTheme.darkTextSecondaryColor : const Color(0xFF6B7280);
-  Color get _border => _isDark
-      ? AppTheme.darkBorderColor
-      : Colors.black.withOpacity(0.04);
-  Color get _surfaceColor =>
-      _isDark ? AppTheme.darkSurfaceColor : const Color(0xFFF7F8FC);
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      setState(() => _visibleCount += _pageSize);
+    }
+  }
 
   static const Color _green = Color(0xFF22C55E);
   static const Color _red = Color(0xFFEF4444);
-
-  final Map<String, IconData> _categoryIcons = const {
-    'alimentation': Icons.restaurant_rounded,
-    'transport': Icons.directions_car_rounded,
-    'logement': Icons.home_rounded,
-    'loisirs': Icons.sports_esports_rounded,
-    'sant\u00e9': Icons.favorite_rounded,
-    'sante': Icons.favorite_rounded,
-    '\u00e9ducation': Icons.school_rounded,
-    'education': Icons.school_rounded,
-    'autres': Icons.more_horiz_rounded,
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -53,140 +52,145 @@ class _TransactionsPageState extends State<TransactionsPage> {
       stream: SupabaseDataService().transactionsStream,
       builder: (context, snapshot) {
         final transactions = snapshot.data ?? [];
+        if (!SupabaseDataService().isFirstLoadComplete) {
+          return Container(
+            color: context.appBgColor,
+            child: const Center(child: CircularProgressIndicator()),
+          );
+        }
         if (transactions.isEmpty) {
           return Container(
-            color: _backgroundColor,
+            color: context.appBgColor,
             child: Center(
               child: _buildEmptyState(),
             ),
           );
         }
 
+        final visible = transactions.take(_visibleCount).toList();
+        final hasMore = transactions.length > _visibleCount;
+
         // Group transactions by date
         final Map<String, List<Transaction>> grouped = {};
-        for (final tx in transactions) {
-          final key = DateFormat('dd MMMM yyyy', 'fr_FR').format(tx.date);
+        for (final tx in visible) {
+          final key = formatDate(context, 'dd MMMM yyyy', tx.date);
           grouped.putIfAbsent(key, () => []).add(tx);
         }
         final sortedKeys = grouped.keys.toList();
 
         return Container(
-          color: _backgroundColor,
-          child: ListView.builder(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-            itemCount: sortedKeys.length,
-            itemBuilder: (context, sectionIndex) {
-              final dateLabel = sortedKeys[sectionIndex];
-              final sectionTransactions = grouped[dateLabel]!;
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (sectionIndex > 0) const SizedBox(height: 20),
-                  // Section date header
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4, bottom: 10),
-                    child: Text(
-                      dateLabel,
+          color: context.appBgColor,
+          child: Column(
+            children: [
+              // Export header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${transactions.length} transaction${transactions.length > 1 ? 's' : ''}',
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: _textSecondary,
-                        letterSpacing: 0.3,
+                        color: context.appTextSecondary,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                  ),
-                  // Transactions card group
-                  Container(
-                    decoration: BoxDecoration(
-                      color: _cardColor,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: _border),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                  itemCount: sortedKeys.length + (hasMore ? 1 : 0),
+                  itemBuilder: (context, sectionIndex) {
+                    if (hasMore && sectionIndex == sortedKeys.length) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Center(
+                          child: TextButton(
+                            onPressed: () =>
+                                setState(() => _visibleCount += _pageSize),
+                            child: Text(
+                              'Voir plus',
+                              style: const TextStyle(
+                                color: AppTheme.primaryColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                    final dateLabel = sortedKeys[sectionIndex];
+                    final sectionTransactions = grouped[dateLabel]!;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (sectionIndex > 0) const SizedBox(height: 20),
+                        // Section date header
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4, bottom: 10),
+                          child: Text(
+                            dateLabel,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: context.appTextSecondary,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+                        // Transactions card group
+                        Container(
+                          decoration: BoxDecoration(
+                            color: context.appCardColor,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: context.appBorderColor),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.03),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: List.generate(sectionTransactions.length,
+                                (index) {
+                              final transaction = sectionTransactions[index];
+                              final isLast =
+                                  index == sectionTransactions.length - 1;
+                              return _buildTransactionTile(
+                                transaction,
+                                showDivider: !isLast,
+                              );
+                            }),
+                          ),
                         ),
                       ],
-                    ),
-                    child: Column(
-                      children: List.generate(sectionTransactions.length,
-                          (index) {
-                        final transaction = sectionTransactions[index];
-                        final isLast =
-                            index == sectionTransactions.length - 1;
-                        return _buildTransactionTile(
-                          transaction,
-                          showDivider: !isLast,
-                        );
-                      }),
-                    ),
-                  ),
-                ],
-              );
-            },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 80),
+            ],
           ),
         );
       },
     );
   }
 
-  // --- Empty state ---
   Widget _buildEmptyState() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 32),
-      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 28),
-      decoration: BoxDecoration(
-        color: _cardColor,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: _surfaceColor,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.receipt_long_rounded,
-              size: 40,
-              color: _textSecondary,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Aucune transaction',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: _textPrimary,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Ajoutez votre premi\u00e8re transaction\npour commencer le suivi',
-            style: TextStyle(
-              fontSize: 14,
-              color: _textSecondary,
-              height: 1.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+    final l10n = AppLocalizations.of(context)!;
+    return AppEmptyState(
+      icon: Icons.receipt_long_rounded,
+      title: l10n.noTransactions,
+      subtitle: l10n.addFirstTransaction,
+      inCard: true,
     );
   }
 
@@ -198,10 +202,10 @@ class _TransactionsPageState extends State<TransactionsPage> {
     final isDeposit = transaction.isDeposit;
     final color = isDeposit ? _green : _red;
     final categoryIcon =
-        _categoryIcons[(transaction.categoryName ?? '').toLowerCase()] ??
+        CategoryIcons.map[(transaction.categoryName ?? '').toLowerCase()] ??
             Icons.receipt_rounded;
     final amountFormatted =
-        NumberFormat('#,###', 'fr_FR').format(transaction.amount);
+        formatMoney(context, transaction.amount, withCurrency: false);
 
     return InkWell(
       onTap: () {
@@ -210,7 +214,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
           MaterialPageRoute(
             builder: (context) => EditTransactionPage(
               transaction: transaction,
-              isDarkMode: _isDark,
             ),
           ),
         );
@@ -242,7 +245,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: _textPrimary,
+                          color: context.appTextPrimary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -256,7 +259,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: _surfaceColor,
+                              color: context.appSurfaceColor,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -264,7 +267,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
-                                color: _textSecondary,
+                                color: context.appTextSecondary,
                               ),
                             ),
                           ),
@@ -272,14 +275,14 @@ class _TransactionsPageState extends State<TransactionsPage> {
                           Icon(
                             Icons.access_time_rounded,
                             size: 12,
-                            color: _textSecondary,
+                            color: context.appTextSecondary,
                           ),
                           const SizedBox(width: 3),
                           Text(
-                            DateFormat('HH:mm').format(transaction.date),
+                            formatDate(context, 'HH:mm', transaction.date),
                             style: TextStyle(
                               fontSize: 12,
-                              color: _textSecondary,
+                              color: context.appTextSecondary,
                             ),
                           ),
                         ],
@@ -313,7 +316,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                         ),
                         const SizedBox(width: 3),
                         Text(
-                          'CFA',
+                          appCurrency(context),
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
@@ -334,7 +337,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               child: Divider(
                 height: 1,
                 thickness: 1,
-                color: _border,
+                color: context.appBorderColor,
               ),
             ),
         ],

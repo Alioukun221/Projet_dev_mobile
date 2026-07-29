@@ -1,15 +1,17 @@
 // ignore_for_file: use_key_in_widget_constructors, use_build_context_synchronously
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
+import 'package:spendwise/models/category.dart' as models;
 import 'package:spendwise/models/transaction.dart';
 import 'package:spendwise/services/supabase_data_service.dart';
-import 'package:spendwise/theme/app_theme.dart';
+import 'package:spendwise/constants/app_colors.dart';
+import 'package:spendwise/constants/app_input_decoration.dart';
+import 'package:spendwise/utils/app_format.dart';
+import 'package:spendwise/utils/user_error.dart';
 
 class AddTransactionPage extends StatefulWidget {
-  final bool isDarkMode;
-  const AddTransactionPage({super.key, required this.isDarkMode});
+  const AddTransactionPage({super.key});
 
   @override
   State<AddTransactionPage> createState() => _AddTransactionPageState();
@@ -19,44 +21,15 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
   final _amountController = TextEditingController();
-  String _selectedType = 'deposit';
+  String _selectedType = 'withdrawal';
   String? _selectedCategory;
   DateTime _selectedDate = DateTime.now();
-  late final Future<List<String>> _categoriesFuture;
 
-  bool get _isDarkMode => widget.isDarkMode;
-
-  // --- Design system colors ---
-  Color get _bgColor =>
-      _isDarkMode ? AppTheme.darkBgColor : const Color(0xFFF7F8FC);
-  Color get _cardColor =>
-      _isDarkMode ? AppTheme.darkCardColor : Colors.white;
-  Color get _textPrimary =>
-      _isDarkMode ? Colors.white : const Color(0xFF1A1D29);
-  Color get _textSecondary =>
-      _isDarkMode ? AppTheme.darkTextSecondaryColor : const Color(0xFF6B7280);
-  Color get _borderColor => _isDarkMode
-      ? AppTheme.darkBorderColor
-      : Colors.black.withOpacity(0.04);
-  Color get _inputFill =>
-      _isDarkMode ? Colors.white.withOpacity(0.06) : const Color(0xFFF1F3F8);
+  bool _isLoading = false;
 
   static const Color _primaryBlue = Color(0xFF005EFF);
   static const Color _green = Color(0xFF22C55E);
   static const Color _red = Color(0xFFEF4444);
-
-  @override
-  void initState() {
-    super.initState();
-    _categoriesFuture = SupabaseDataService().getAllCategoryNames()
-      ..then((categories) {
-        if (categories.isNotEmpty && mounted) {
-          setState(() => _selectedCategory = categories.first);
-        }
-      }).catchError((e) {
-        debugPrint('AddTransactionPage.initCategories: $e');
-      });
-  }
 
   @override
   void dispose() {
@@ -65,55 +38,10 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     super.dispose();
   }
 
-  // --- Shared input decoration builder ---
-  InputDecoration _buildInputDecoration({
-    required String label,
-    String? prefixText,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: TextStyle(
-        color: _textSecondary,
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-      ),
-      prefixText: prefixText,
-      prefixStyle: TextStyle(
-        color: _textSecondary,
-        fontWeight: FontWeight.w600,
-      ),
-      suffixIcon: suffixIcon,
-      filled: true,
-      fillColor: _inputFill,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: _borderColor),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: _borderColor),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _primaryBlue, width: 1.8),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _red, width: 1.2),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _red, width: 1.8),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bgColor,
+      backgroundColor: context.appBgColor,
       appBar: _buildAppBar(context),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -126,12 +54,13 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: _cardColor,
+                  color: context.appCardColor,
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: _borderColor),
+                  border: Border.all(color: context.appBorderColor),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(_isDarkMode ? 0.18 : 0.04),
+                      color: Colors.black
+                          .withOpacity(context.isDark ? 0.18 : 0.04),
                       blurRadius: 16,
                       offset: const Offset(0, 4),
                     ),
@@ -140,6 +69,26 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // --- Description field ---
+                    TextFormField(
+                      controller: _descriptionController,
+                      style: TextStyle(
+                        color: context.appTextPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      decoration: AppInputDecoration.of(
+                        context,
+                        label: AppLocalizations.of(context)!.title,
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return AppLocalizations.of(context)!.pleaseEnterName;
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 18),
                     // --- Transaction type toggle ---
                     _buildTypeToggle(context),
                     const SizedBox(height: 22),
@@ -153,44 +102,25 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                       controller: _amountController,
                       keyboardType: TextInputType.number,
                       style: TextStyle(
-                        color: _textPrimary,
+                        color: context.appTextPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                       ),
-                      decoration: _buildInputDecoration(
+                      decoration: AppInputDecoration.of(
+                        context,
                         label: AppLocalizations.of(context)!.amount,
-                        prefixText: 'CFA ',
+                        prefixText: '${appCurrency(context)} ',
                       ),
                       validator: (value) {
                         if (value == null ||
                             value.isEmpty ||
                             value.toString() == "0") {
-                          return AppLocalizations.of(context)!.pleaseEnterAmount;
+                          return AppLocalizations.of(context)!
+                              .pleaseEnterAmount;
                         }
                         if (double.tryParse(value) == null) {
                           return AppLocalizations.of(context)!
                               .pleaseEnterAmountInvalid;
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 18),
-
-                    // --- Description field ---
-                    TextFormField(
-                      controller: _descriptionController,
-                      style: TextStyle(
-                        color: _textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      decoration: _buildInputDecoration(
-                        label: AppLocalizations.of(context)!.description,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return AppLocalizations.of(context)!
-                              .pleaseEnterDescription;
                         }
                         return null;
                       },
@@ -233,7 +163,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
-              Icons.arrow_back_rounded,
+              Icons.arrow_back_ios_rounded,
               color: _primaryBlue,
               size: 22,
             ),
@@ -243,7 +173,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       title: Text(
         AppLocalizations.of(context)!.newTransations,
         style: TextStyle(
-          color: _textPrimary,
+          color: context.appTextPrimary,
           fontSize: 18,
           fontWeight: FontWeight.w700,
           letterSpacing: -0.3,
@@ -270,12 +200,14 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               decoration: BoxDecoration(
                 color: isDeposit
                     ? _green.withOpacity(0.10)
-                    : (_isDarkMode
+                    : (context.isDark
                         ? Colors.white.withOpacity(0.04)
                         : const Color(0xFFF1F3F8)),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isDeposit ? _green.withOpacity(0.5) : _borderColor,
+                  color: isDeposit
+                      ? _green.withOpacity(0.5)
+                      : context.appBorderColor,
                   width: isDeposit ? 1.6 : 1.0,
                 ),
               ),
@@ -285,7 +217,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   Icon(
                     Icons.arrow_downward_rounded,
                     size: 18,
-                    color: isDeposit ? _green : _textSecondary,
+                    color: isDeposit ? _green : context.appTextSecondary,
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -293,7 +225,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: isDeposit ? FontWeight.w700 : FontWeight.w500,
-                      color: isDeposit ? _green : _textSecondary,
+                      color: isDeposit ? _green : context.appTextSecondary,
                     ),
                   ),
                 ],
@@ -313,12 +245,14 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               decoration: BoxDecoration(
                 color: !isDeposit
                     ? _red.withOpacity(0.10)
-                    : (_isDarkMode
+                    : (context.isDark
                         ? Colors.white.withOpacity(0.04)
                         : const Color(0xFFF1F3F8)),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: !isDeposit ? _red.withOpacity(0.5) : _borderColor,
+                  color: !isDeposit
+                      ? _red.withOpacity(0.5)
+                      : context.appBorderColor,
                   width: !isDeposit ? 1.6 : 1.0,
                 ),
               ),
@@ -328,7 +262,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                   Icon(
                     Icons.arrow_upward_rounded,
                     size: 18,
-                    color: !isDeposit ? _red : _textSecondary,
+                    color: !isDeposit ? _red : context.appTextSecondary,
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -337,7 +271,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                       fontSize: 14,
                       fontWeight:
                           !isDeposit ? FontWeight.w700 : FontWeight.w500,
-                      color: !isDeposit ? _red : _textSecondary,
+                      color: !isDeposit ? _red : context.appTextSecondary,
                     ),
                   ),
                 ],
@@ -352,14 +286,31 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   // ===================== Category Dropdown =====================
 
   Widget _buildCategoryDropdown(BuildContext context) {
-    return FutureBuilder<List<String>>(
-      future: _categoriesFuture,
+    return StreamBuilder<List<models.Category>>(
+      stream: SupabaseDataService().categoriesStream,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return Container(
+            height: 56,
+            decoration: BoxDecoration(
+              color: context.appInputFill,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: context.appBorderColor),
+            ),
+            child: const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
         }
 
-        final categories = snapshot.data!;
+        final allCats =
+            snapshot.data!.where((c) => c.isDeleted != true).toList();
+        final categories = allCats.map((c) => c.name).toList();
+
         if (categories.isEmpty) {
           return Container(
             padding: const EdgeInsets.all(18),
@@ -382,9 +333,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/categories');
-                    },
+                    onPressed: () =>
+                        Navigator.pushNamed(context, '/categories'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _primaryBlue,
                       foregroundColor: Colors.white,
@@ -393,8 +343,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child:
-                        Text(AppLocalizations.of(context)!.createCategory),
+                    child: Text(AppLocalizations.of(context)!.createCategory),
                   ),
                 ),
               ],
@@ -402,23 +351,24 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           );
         }
 
-        // Reset selected category if it no longer exists
-        if (_selectedCategory != null &&
+        if (_selectedCategory == null ||
             !categories.contains(_selectedCategory)) {
-          _selectedCategory = categories.first;
-        } else if (_selectedCategory == null && categories.isNotEmpty) {
-          _selectedCategory = categories.first;
+          final defaultCat = allCats.firstWhere(
+            (c) => c.isDefault,
+            orElse: () => allCats.first,
+          );
+          _selectedCategory = defaultCat.name;
         }
 
         return DropdownButtonFormField<String>(
           value: _selectedCategory,
-          items: categories.map((category) {
+          items: categories.map((name) {
             return DropdownMenuItem(
-              value: category,
+              value: name,
               child: Text(
-                category,
+                name,
                 style: TextStyle(
-                  color: _textPrimary,
+                  color: context.appTextPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                 ),
@@ -426,21 +376,16 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
             );
           }).toList(),
           onChanged: (value) {
-            if (value != null) {
-              setState(() {
-                _selectedCategory = value;
-              });
-            }
+            if (value != null) setState(() => _selectedCategory = value);
           },
-          decoration: _buildInputDecoration(
+          decoration: AppInputDecoration.of(
+            context,
             label: AppLocalizations.of(context)!.category,
           ),
-          dropdownColor: _cardColor,
+          dropdownColor: context.appCardColor,
           borderRadius: BorderRadius.circular(14),
-          icon: Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: _textSecondary,
-          ),
+          icon: Icon(Icons.keyboard_arrow_down_rounded,
+              color: context.appTextSecondary),
         );
       },
     );
@@ -459,37 +404,47 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
           builder: (context, child) {
             return Theme(
               data: Theme.of(context).copyWith(
-                colorScheme: _isDarkMode
+                colorScheme: context.isDark
                     ? ColorScheme.dark(
                         primary: _primaryBlue,
                         onPrimary: Colors.white,
-                        surface: _cardColor,
-                        onSurface: _textPrimary,
+                        surface: context.appCardColor,
+                        onSurface: context.appTextPrimary,
                       )
                     : ColorScheme.light(
                         primary: _primaryBlue,
                         onPrimary: Colors.white,
                         surface: Colors.white,
-                        onSurface: _textPrimary,
+                        onSurface: context.appTextPrimary,
                       ),
-                dialogBackgroundColor: _cardColor,
+                dialogBackgroundColor: context.appCardColor,
               ),
               child: child!,
             );
           },
         );
         if (date != null) {
+          final time = await showTimePicker(
+            context: context,
+            initialTime: TimeOfDay.fromDateTime(_selectedDate),
+          );
           setState(() {
-            _selectedDate = date;
+            _selectedDate = DateTime(
+              date.year,
+              date.month,
+              date.day,
+              time?.hour ?? _selectedDate.hour,
+              time?.minute ?? _selectedDate.minute,
+            );
           });
         }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         decoration: BoxDecoration(
-          color: _inputFill,
+          color: context.appInputFill,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _borderColor),
+          border: Border.all(color: context.appBorderColor),
         ),
         child: Row(
           children: [
@@ -512,16 +467,16 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                 Text(
                   AppLocalizations.of(context)!.date,
                   style: TextStyle(
-                    color: _textSecondary,
+                    color: context.appTextSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  '${_selectedDate.day.toString().padLeft(2, '0')}/${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.year}',
+                  '${_selectedDate.day.toString().padLeft(2, '0')}/${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.year} ${_selectedDate.hour.toString().padLeft(2, '0')}:${_selectedDate.minute.toString().padLeft(2, '0')}',
                   style: TextStyle(
-                    color: _textPrimary,
+                    color: context.appTextPrimary,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
@@ -531,7 +486,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
             const Spacer(),
             Icon(
               Icons.chevron_right_rounded,
-              color: _textSecondary,
+              color: context.appTextSecondary,
               size: 22,
             ),
           ],
@@ -544,52 +499,83 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
   Widget _buildSaveButton(BuildContext context) {
     return GestureDetector(
-      onTap: () async {
-        if (_formKey.currentState!.validate() && _selectedCategory != null) {
-          final amount = double.parse(_amountController.text);
-          final categoryId =
-              await SupabaseDataService().getCategoryIdByName(_selectedCategory!);
-
-          final transaction = Transaction(
-            type: _selectedType,
-            categoryId: categoryId,
-            amount: amount,
-            description: _descriptionController.text,
-            date: _selectedDate,
-          );
-
-          await SupabaseDataService().addTransaction(transaction);
-          if (!mounted) return;
-          Navigator.pop(context);
-        }
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF005EFF), Color(0xFF008CFF)],
+      onTap: _isLoading
+          ? null
+          : () async {
+              if (!_formKey.currentState!.validate() ||
+                  _selectedCategory == null) {
+                return;
+              }
+              setState(() => _isLoading = true);
+              try {
+                final amount = double.parse(_amountController.text);
+                final categoryId = await SupabaseDataService()
+                    .getCategoryIdByName(_selectedCategory!);
+                final transaction = Transaction(
+                  type: _selectedType,
+                  categoryId: categoryId,
+                  amount: amount,
+                  description: _descriptionController.text,
+                  date: _selectedDate,
+                );
+                await SupabaseDataService().addTransaction(transaction);
+                if (!mounted) return;
+                Navigator.pop(context);
+              } catch (e) {
+                if (!mounted) return;
+                setState(() => _isLoading = false);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                        userErrorMessage(e, AppLocalizations.of(context)!)),
+                    backgroundColor: _red,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                );
+              }
+            },
+      child: AnimatedOpacity(
+        opacity: _isLoading ? 0.7 : 1.0,
+        duration: const Duration(milliseconds: 150),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF005EFF), Color(0xFF008CFF)],
+            ),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: _primaryBlue.withOpacity(0.3),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: _primaryBlue.withOpacity(0.3),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Center(
-          child: Text(
-            AppLocalizations.of(context)!.save,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.3,
-            ),
+          child: Center(
+            child: _isLoading
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Text(
+                    AppLocalizations.of(context)!.save,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
           ),
         ),
       ),

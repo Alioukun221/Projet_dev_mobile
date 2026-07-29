@@ -4,12 +4,14 @@ import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/models/category.dart' as models;
 import 'package:spendwise/services/local_cache_service.dart';
 import 'package:spendwise/services/notification_transaction_service.dart';
+import 'package:spendwise/services/sms_transaction_service.dart';
 import 'package:spendwise/services/supabase_data_service.dart';
+import 'package:spendwise/constants/app_colors.dart';
 import 'package:spendwise/theme/app_theme.dart';
+import 'package:spendwise/utils/user_error.dart';
 
 class NotificationSettingsPage extends StatefulWidget {
-  final bool isDarkMode;
-  const NotificationSettingsPage({super.key, required this.isDarkMode});
+  const NotificationSettingsPage({super.key});
 
   @override
   State<NotificationSettingsPage> createState() =>
@@ -21,19 +23,6 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   bool _hasPermission = false;
   List<models.Category> _categories = [];
 
-  bool get _isDarkMode => widget.isDarkMode;
-  Color get _bgColor =>
-      _isDarkMode ? AppTheme.darkBgColor : const Color(0xFFF7F8FC);
-  Color get _cardColor =>
-      _isDarkMode ? AppTheme.darkCardColor : Colors.white;
-  Color get _textPrimary =>
-      _isDarkMode ? Colors.white : const Color(0xFF1A1D29);
-  Color get _textSecondary =>
-      _isDarkMode ? AppTheme.darkTextSecondaryColor : const Color(0xFF6B7280);
-  Color get _borderColor => _isDarkMode
-      ? AppTheme.darkBorderColor
-      : Colors.black.withOpacity(0.04);
-
   @override
   void initState() {
     super.initState();
@@ -42,14 +31,25 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   }
 
   Future<void> _checkPermission() async {
-    final granted =
-        await NotificationListenerService.isPermissionGranted();
+    final granted = await NotificationListenerService.isPermissionGranted();
     if (mounted) setState(() => _hasPermission = granted);
   }
 
   Future<void> _loadCategories() async {
-    final cats = await SupabaseDataService().getCategories();
-    if (mounted) setState(() => _categories = cats);
+    try {
+      final cats = await SupabaseDataService().getCategories();
+      if (mounted) setState(() => _categories = cats);
+    } catch (e) {
+      debugPrint('NotificationSettingsPage._loadCategories: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(userErrorMessage(e, AppLocalizations.of(context)!)),
+          backgroundColor: AppTheme.errorColor,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _requestPermission() async {
@@ -57,13 +57,49 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     await _checkPermission();
   }
 
-  void _toggleEnabled(bool value) {
+  Future<void> _toggleEnabled(bool value) async {
+    if (value && !_cache.hasNotifConsent) {
+      final consented = await _showConsentDialog();
+      if (!consented) return;
+      _cache.hasNotifConsent = true;
+    }
     setState(() => _cache.isNotificationListeningEnabled = value);
     if (value && _hasPermission) {
       NotificationTransactionService().startListening();
+      if (_cache.isOrangeMoneyEnabled) {
+        await SmsTransactionService().startListening();
+      }
     } else {
       NotificationTransactionService().stopListening();
+      SmsTransactionService().stopListening();
     }
+  }
+
+  Future<bool> _showConsentDialog() async {
+    final l10n = AppLocalizations.of(context)!;
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.notifConsentTitle),
+        content: SingleChildScrollView(child: Text(l10n.notifConsentBody)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.notifConsentDecline),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.notifConsentAccept),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
 
   @override
@@ -71,13 +107,15 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: _bgColor,
+      backgroundColor: context.appBgColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: _textPrimary),
+          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+          icon:
+              Icon(Icons.arrow_back_ios_rounded, color: context.appTextPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -85,7 +123,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w800,
-            color: _textPrimary,
+            color: context.appTextPrimary,
             letterSpacing: -0.5,
           ),
         ),
@@ -138,7 +176,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: _textPrimary,
+                    color: context.appTextPrimary,
                   ),
                 ),
               ),
@@ -148,12 +186,13 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: _textPrimary,
+                    color: context.appTextPrimary,
                   ),
                 ),
                 subtitle: Text(
                   l10n.notificationModeAutoDesc,
-                  style: TextStyle(fontSize: 12, color: _textSecondary),
+                  style:
+                      TextStyle(fontSize: 12, color: context.appTextSecondary),
                 ),
                 value: 'auto',
                 groupValue: _cache.notificationMode,
@@ -168,12 +207,13 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: _textPrimary,
+                    color: context.appTextPrimary,
                   ),
                 ),
                 subtitle: Text(
                   l10n.notificationModeConfirmationDesc,
-                  style: TextStyle(fontSize: 12, color: _textSecondary),
+                  style:
+                      TextStyle(fontSize: 12, color: context.appTextSecondary),
                 ),
                 value: 'confirmation',
                 groupValue: _cache.notificationMode,
@@ -201,7 +241,16 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
             iconColor: const Color(0xFFFF6600),
             title: 'Orange Money',
             value: _cache.isOrangeMoneyEnabled,
-            onChanged: (v) => setState(() => _cache.isOrangeMoneyEnabled = v),
+            onChanged: (v) {
+              setState(() => _cache.isOrangeMoneyEnabled = v);
+              if (v &&
+                  _cache.hasNotifConsent &&
+                  _cache.isNotificationListeningEnabled) {
+                SmsTransactionService().startListening();
+              } else {
+                SmsTransactionService().stopListening();
+              }
+            },
           ),
           const SizedBox(height: 16),
 
@@ -216,7 +265,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: _textPrimary,
+                      color: context.appTextPrimary,
                     ),
                   ),
                 ),
@@ -250,9 +299,9 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: context.appCardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _borderColor),
+        border: Border.all(color: context.appBorderColor),
       ),
       child: Row(
         children: [
@@ -271,7 +320,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: _textPrimary,
+                color: context.appTextPrimary,
               ),
             ),
           ),
@@ -291,9 +340,9 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: context.appCardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _borderColor),
+        border: Border.all(color: context.appBorderColor),
       ),
       child: Row(
         children: [
@@ -312,7 +361,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: _textPrimary,
+                color: context.appTextPrimary,
               ),
             ),
           ),
@@ -330,9 +379,9 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   Widget _buildCard({required List<Widget> children}) {
     return Container(
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: context.appCardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _borderColor),
+        border: Border.all(color: context.appBorderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -355,14 +404,14 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: _textSecondary,
+              color: context.appTextSecondary,
             ),
           ),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: _isDarkMode
+              color: context.isDark
                   ? Colors.white.withOpacity(0.08)
                   : Colors.black.withOpacity(0.04),
               borderRadius: BorderRadius.circular(10),
@@ -373,18 +422,18 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     ? currentId
                     : null,
                 isDense: true,
-                dropdownColor: _cardColor,
+                dropdownColor: context.appCardColor,
                 borderRadius: BorderRadius.circular(14),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: _textPrimary,
+                  color: context.appTextPrimary,
                 ),
                 hint: Text(
                   'Auto',
                   style: TextStyle(
                     fontSize: 13,
-                    color: _textSecondary,
+                    color: context.appTextSecondary,
                   ),
                 ),
                 items: [
@@ -392,7 +441,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     value: null,
                     child: Text(
                       'Auto',
-                      style: TextStyle(color: _textSecondary),
+                      style: TextStyle(color: context.appTextSecondary),
                     ),
                   ),
                   ..._categories.map(

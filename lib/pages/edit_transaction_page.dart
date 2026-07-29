@@ -4,16 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/models/transaction.dart';
 import 'package:spendwise/services/supabase_data_service.dart';
+import 'package:spendwise/constants/app_colors.dart';
+import 'package:spendwise/constants/app_input_decoration.dart';
 import 'package:spendwise/theme/app_theme.dart';
+import 'package:spendwise/utils/app_format.dart';
+import 'package:spendwise/utils/user_error.dart';
 
 class EditTransactionPage extends StatefulWidget {
   final Transaction transaction;
-  final bool isDarkMode;
 
   const EditTransactionPage({
     super.key,
     required this.transaction,
-    required this.isDarkMode,
   });
 
   @override
@@ -28,20 +30,8 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
   late String _selectedCategory;
   late DateTime _selectedDate;
 
-  bool get _isDarkMode => widget.isDarkMode;
-
-  // -- Design system colors --
-  Color get _bgColor =>
-      _isDarkMode ? AppTheme.darkBgColor : const Color(0xFFF7F8FC);
-  Color get _cardColor =>
-      _isDarkMode ? AppTheme.darkCardColor : Colors.white;
-  Color get _textPrimary =>
-      _isDarkMode ? Colors.white : const Color(0xFF1A1D29);
-  Color get _textSecondary =>
-      _isDarkMode ? AppTheme.darkTextSecondaryColor : const Color(0xFF6B7280);
-  Color get _borderColor => _isDarkMode
-      ? AppTheme.darkBorderColor
-      : Colors.black.withOpacity(0.04);
+  bool _isLoading = false;
+  late final Future<List<String>> _categoriesFuture;
   static const Color _primaryBlue = Color(0xFF005EFF);
   static const Color _greenColor = Color(0xFF22C55E);
   static const Color _redColor = Color(0xFFEF4444);
@@ -56,6 +46,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
     _selectedType = widget.transaction.type;
     _selectedCategory = widget.transaction.categoryName ?? '';
     _selectedDate = widget.transaction.date;
+    _categoriesFuture = SupabaseDataService().getAllCategoryNames();
   }
 
   @override
@@ -65,8 +56,10 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
     super.dispose();
   }
 
-  void _updateTransaction() async {
-    if (_formKey.currentState!.validate()) {
+  Future<void> _updateTransaction() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _isLoading = true);
+    try {
       final newAmount = double.parse(_amountController.text);
       final categoryId =
           await SupabaseDataService().getCategoryIdByName(_selectedCategory);
@@ -84,6 +77,18 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
       await SupabaseDataService().updateTransaction(updated);
       if (!mounted) return;
       Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(userErrorMessage(e, AppLocalizations.of(context)!)),
+          backgroundColor: _redColor,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
     }
   }
 
@@ -99,30 +104,41 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
             colorScheme: ColorScheme.light(
               primary: _primaryBlue,
               onPrimary: Colors.white,
-              surface: _isDarkMode
+              surface: context.isDark
                   ? AppTheme.darkCardColor
                   : AppTheme.surfaceColor,
               onSurface:
-                  _isDarkMode ? Colors.white : AppTheme.textPrimaryColor,
+                  context.isDark ? Colors.white : AppTheme.textPrimaryColor,
             ),
           ),
           child: child!,
         );
       },
     );
-    if (picked != null && picked != _selectedDate) {
+    if (picked != null) {
+      final TimeOfDay? timePicked = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(_selectedDate),
+      );
       setState(() {
-        _selectedDate = picked;
+        _selectedDate = DateTime(
+          picked.year,
+          picked.month,
+          picked.day,
+          timePicked?.hour ?? _selectedDate.hour,
+          timePicked?.minute ?? _selectedDate.minute,
+        );
       });
     }
   }
 
   void _showDeleteDialog() {
     final loc = AppLocalizations.of(context)!;
+    final pageContext = context;
     showDialog(
-      context: context,
+      context: pageContext,
       builder: (context) => Dialog(
-        backgroundColor: _cardColor,
+        backgroundColor: context.appCardColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
@@ -148,17 +164,17 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
               Text(
                 loc.deleteConfirmationTitle,
                 style: TextStyle(
-                  color: _textPrimary,
+                  color: context.appTextPrimary,
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Voulez-vous vraiment supprimer cette transaction ?',
+                loc.deleteTransactionConfirmation,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: _textSecondary,
+                  color: context.appTextSecondary,
                   fontSize: 14,
                   height: 1.5,
                 ),
@@ -172,8 +188,9 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(context),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: _textPrimary,
-                          side: BorderSide(color: _borderColor, width: 1.5),
+                          foregroundColor: context.appTextPrimary,
+                          side: BorderSide(
+                              color: context.appBorderColor, width: 1.5),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
@@ -194,12 +211,32 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                       height: 48,
                       child: ElevatedButton(
                         onPressed: () async {
-                          await SupabaseDataService()
-                              .deleteTransaction(widget.transaction);
-                          if (!context.mounted) return;
-                          Navigator.pop(context); // Close dialog
-                          Navigator.pop(
-                              context); // Return to previous screen
+                          final dialogNavigator = Navigator.of(context);
+                          final pageNavigator = Navigator.of(pageContext);
+                          try {
+                            await SupabaseDataService()
+                                .deleteTransaction(widget.transaction);
+                            if (!mounted) return;
+                            dialogNavigator.pop(); // Close dialog
+                            if (pageNavigator.canPop()) {
+                              pageNavigator.pop(true);
+                            }
+                          } catch (e) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(pageContext).showSnackBar(
+                              SnackBar(
+                                content: Text(userErrorMessage(
+                                  e,
+                                  AppLocalizations.of(pageContext)!,
+                                )),
+                                backgroundColor: _redColor,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            );
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _redColor,
@@ -228,52 +265,6 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
     );
   }
 
-  InputDecoration _buildInputDecoration({
-    required String label,
-    String? prefixText,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: TextStyle(
-        color: _textSecondary,
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-      ),
-      prefixText: prefixText,
-      prefixStyle: TextStyle(
-        color: _textSecondary,
-        fontSize: 15,
-        fontWeight: FontWeight.w500,
-      ),
-      suffixIcon: suffixIcon,
-      filled: true,
-      fillColor: _cardColor,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: _borderColor),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: _borderColor),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _primaryBlue, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _redColor, width: 1.5),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _redColor, width: 1.5),
-      ),
-    );
-  }
-
   Widget _buildTypeToggle() {
     final loc = AppLocalizations.of(context)!;
     return Row(
@@ -287,12 +278,12 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
               decoration: BoxDecoration(
                 color: _selectedType == 'deposit'
                     ? _greenColor.withOpacity(0.12)
-                    : _cardColor,
+                    : context.appCardColor,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: _selectedType == 'deposit'
                       ? _greenColor.withOpacity(0.4)
-                      : _borderColor,
+                      : context.appBorderColor,
                   width: _selectedType == 'deposit' ? 1.5 : 1,
                 ),
               ),
@@ -304,14 +295,14 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                     decoration: BoxDecoration(
                       color: _selectedType == 'deposit'
                           ? _greenColor.withOpacity(0.15)
-                          : _textSecondary.withOpacity(0.08),
+                          : context.appTextSecondary.withOpacity(0.08),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.arrow_downward_rounded,
                       color: _selectedType == 'deposit'
                           ? _greenColor
-                          : _textSecondary,
+                          : context.appTextSecondary,
                       size: 20,
                     ),
                   ),
@@ -321,7 +312,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                     style: TextStyle(
                       color: _selectedType == 'deposit'
                           ? _greenColor
-                          : _textSecondary,
+                          : context.appTextSecondary,
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
@@ -341,12 +332,12 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
               decoration: BoxDecoration(
                 color: _selectedType == 'withdrawal'
                     ? _redColor.withOpacity(0.12)
-                    : _cardColor,
+                    : context.appCardColor,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: _selectedType == 'withdrawal'
                       ? _redColor.withOpacity(0.4)
-                      : _borderColor,
+                      : context.appBorderColor,
                   width: _selectedType == 'withdrawal' ? 1.5 : 1,
                 ),
               ),
@@ -358,14 +349,14 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                     decoration: BoxDecoration(
                       color: _selectedType == 'withdrawal'
                           ? _redColor.withOpacity(0.15)
-                          : _textSecondary.withOpacity(0.08),
+                          : context.appTextSecondary.withOpacity(0.08),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.arrow_upward_rounded,
                       color: _selectedType == 'withdrawal'
                           ? _redColor
-                          : _textSecondary,
+                          : context.appTextSecondary,
                       size: 20,
                     ),
                   ),
@@ -375,7 +366,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                     style: TextStyle(
                       color: _selectedType == 'withdrawal'
                           ? _redColor
-                          : _textSecondary,
+                          : context.appTextSecondary,
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
@@ -394,7 +385,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
     final loc = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: _bgColor,
+      backgroundColor: context.appBgColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -409,13 +400,13 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: _cardColor,
+                  color: context.appCardColor,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: _borderColor),
+                  border: Border.all(color: context.appBorderColor),
                 ),
                 child: Icon(
-                  Icons.arrow_back_rounded,
-                  color: _textPrimary,
+                  Icons.arrow_back_ios_rounded,
+                  color: context.appTextPrimary,
                   size: 20,
                 ),
               ),
@@ -423,9 +414,9 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
           ),
         ),
         title: Text(
-          'Modifier la transaction',
+          loc.editTransaction,
           style: TextStyle(
-            color: _textPrimary,
+            color: context.appTextPrimary,
             fontSize: 18,
             fontWeight: FontWeight.w700,
           ),
@@ -471,9 +462,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
 
               // -- Category dropdown --
               StreamBuilder<List<String>>(
-                stream: Stream.fromFuture(
-                  SupabaseDataService().getAllCategoryNames(),
-                ),
+                stream: Stream.fromFuture(_categoriesFuture),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return Center(
@@ -492,15 +481,15 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                     return Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: _cardColor,
+                        color: context.appCardColor,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: _borderColor),
+                        border: Border.all(color: context.appBorderColor),
                       ),
                       child: Column(
                         children: [
                           Icon(
                             Icons.category_outlined,
-                            color: _textSecondary,
+                            color: context.appTextSecondary,
                             size: 32,
                           ),
                           const SizedBox(height: 12),
@@ -536,14 +525,14 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
 
                   return DropdownButtonFormField<String>(
                     menuMaxHeight: 400,
-                    value: _selectedCategory,
+                    value: _selectedCategory.isEmpty ? null : _selectedCategory,
                     items: categories.map((category) {
                       return DropdownMenuItem(
                         value: category,
                         child: Text(
                           category,
                           style: TextStyle(
-                            color: _textPrimary,
+                            color: context.appTextPrimary,
                             fontSize: 15,
                           ),
                         ),
@@ -556,13 +545,14 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                         });
                       }
                     },
-                    decoration: _buildInputDecoration(
+                    decoration: AppInputDecoration.of(
+                      context,
                       label: loc.category,
                     ),
-                    dropdownColor: _cardColor,
+                    dropdownColor: context.appCardColor,
                     icon: Icon(
                       Icons.keyboard_arrow_down_rounded,
-                      color: _textSecondary,
+                      color: context.appTextSecondary,
                     ),
                   );
                 },
@@ -574,13 +564,14 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                 controller: _amountController,
                 keyboardType: TextInputType.number,
                 style: TextStyle(
-                  color: _textPrimary,
+                  color: context.appTextPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                 ),
-                decoration: _buildInputDecoration(
+                decoration: AppInputDecoration.of(
+                  context,
                   label: loc.amount,
-                  prefixText: 'CFA ',
+                  prefixText: '${appCurrency(context)} ',
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -598,11 +589,12 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
               TextFormField(
                 controller: _descriptionController,
                 style: TextStyle(
-                  color: _textPrimary,
+                  color: context.appTextPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                 ),
-                decoration: _buildInputDecoration(
+                decoration: AppInputDecoration.of(
+                  context,
                   label: loc.description,
                 ),
                 validator: (value) {
@@ -618,12 +610,12 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
               GestureDetector(
                 onTap: () => _selectDate(context),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 18, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
                   decoration: BoxDecoration(
-                    color: _cardColor,
+                    color: context.appCardColor,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: _borderColor),
+                    border: Border.all(color: context.appBorderColor),
                   ),
                   child: Row(
                     children: [
@@ -648,16 +640,16 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                             Text(
                               loc.date,
                               style: TextStyle(
-                                color: _textSecondary,
+                                color: context.appTextSecondary,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '${_selectedDate.day.toString().padLeft(2, '0')}/${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.year}',
+                              '${_selectedDate.day.toString().padLeft(2, '0')}/${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.year} ${_selectedDate.hour.toString().padLeft(2, '0')}:${_selectedDate.minute.toString().padLeft(2, '0')}',
                               style: TextStyle(
-                                color: _textPrimary,
+                                color: context.appTextPrimary,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -667,7 +659,7 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                       ),
                       Icon(
                         Icons.chevron_right_rounded,
-                        color: _textSecondary,
+                        color: context.appTextSecondary,
                         size: 22,
                       ),
                     ],
@@ -695,31 +687,42 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
                   ],
                 ),
                 child: ElevatedButton(
-                  onPressed: _updateTransaction,
+                  onPressed: _isLoading ? null : _updateTransaction,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.transparent,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                     padding: EdgeInsets.zero,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.check_rounded, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Mettre \u00e0 jour',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.3,
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.check_rounded, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              loc.update,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ],

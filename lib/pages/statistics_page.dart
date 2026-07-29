@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:intl/intl.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
-import '../models/transaction.dart';
+import 'package:spendwise/models/transaction.dart';
 
 import 'package:spendwise/services/supabase_data_service.dart';
-import 'package:spendwise/theme/app_theme.dart';
+import 'package:spendwise/constants/app_colors.dart';
+import 'package:spendwise/utils/app_format.dart';
 
 class StatisticsPage extends StatefulWidget {
   const StatisticsPage({super.key});
@@ -15,25 +15,9 @@ class StatisticsPage extends StatefulWidget {
 }
 
 class _StatisticsPageState extends State<StatisticsPage> {
-  String _selectedPeriod = 'Mois';
-  final List<String> _periods = ['Jour', 'Semaine', 'Mois', 'Année'];
+  String _selectedPeriod = 'month';
+  final List<String> _periods = ['day', 'week', 'month', 'year'];
   int _touchedPieIndex = -1;
-
-  // --- Design system helpers ---
-  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
-
-  Color get _cardColor => _isDark ? AppTheme.darkCardColor : Colors.white;
-
-  Color get _textPrimary => _isDark ? Colors.white : const Color(0xFF1A1D29);
-
-  Color get _textSecondary =>
-      _isDark ? AppTheme.darkTextSecondaryColor : const Color(0xFF6B7280);
-
-  Color get _border =>
-      _isDark ? AppTheme.darkBorderColor : Colors.black.withOpacity(0.04);
-
-  Color get _surfaceColor =>
-      _isDark ? AppTheme.darkSurfaceColor : const Color(0xFFF7F8FC);
 
   static const Color _primaryColor = Color(0xFF005EFF);
   static const Color _greenColor = Color(0xFF22C55E);
@@ -42,13 +26,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
   String _periodLabel(String key) {
     final l10n = AppLocalizations.of(context)!;
     switch (key) {
-      case 'Jour':
+      case 'day':
         return l10n.day;
-      case 'Semaine':
+      case 'week':
         return l10n.week;
-      case 'Mois':
+      case 'month':
         return l10n.month;
-      case 'Année':
+      case 'year':
         return l10n.year;
       default:
         return key;
@@ -60,6 +44,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
     return StreamBuilder<List<Transaction>>(
       stream: SupabaseDataService().transactionsStream,
       builder: (context, snapshot) {
+        if (!SupabaseDataService().isFirstLoadComplete) {
+          return const Center(child: CircularProgressIndicator());
+        }
         final allTransactions = snapshot.data ?? [];
         if (allTransactions.isEmpty) {
           return Center(
@@ -69,13 +56,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: _surfaceColor,
+                    color: context.appSurfaceColor,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.bar_chart_rounded,
                     size: 48,
-                    color: _textSecondary,
+                    color: context.appTextSecondary,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -84,7 +71,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
-                    color: _textPrimary,
+                    color: context.appTextPrimary,
                     letterSpacing: -0.3,
                   ),
                 ),
@@ -93,7 +80,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                   AppLocalizations.of(context)!.noDataDescription,
                   style: TextStyle(
                     fontSize: 14,
-                    color: _textSecondary,
+                    color: context.appTextSecondary,
                     height: 1.4,
                   ),
                   textAlign: TextAlign.center,
@@ -108,16 +95,16 @@ class _StatisticsPageState extends State<StatisticsPage> {
         DateTime startDate;
 
         switch (_selectedPeriod) {
-          case 'Jour':
+          case 'day':
             startDate = DateTime(now.year, now.month, now.day);
             break;
-          case 'Semaine':
+          case 'week':
             startDate = now.subtract(Duration(days: now.weekday - 1));
             break;
-          case 'Mois':
+          case 'month':
             startDate = DateTime(now.year, now.month, 1);
             break;
-          case 'Année':
+          case 'year':
             startDate = DateTime(now.year, 1, 1);
             break;
           default:
@@ -191,6 +178,16 @@ class _StatisticsPageState extends State<StatisticsPage> {
               ),
               const SizedBox(height: 12),
               _buildPieChartCard(totalIncome, totalExpenses),
+              const SizedBox(height: 28),
+
+              // --- Category breakdown ---
+              if (filteredTransactions.any((tx) => !tx.isDeposit)) ...[
+                _buildSectionHeader(
+                  AppLocalizations.of(context)!.expensesByCategory,
+                ),
+                const SizedBox(height: 12),
+                _buildCategoryBreakdown(filteredTransactions),
+              ],
               const SizedBox(height: 70),
             ],
           ),
@@ -206,9 +203,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: context.appCardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _border),
+        border: Border.all(color: context.appBorderColor),
       ),
       child: Row(
         children: _periods.map((period) {
@@ -244,7 +241,8 @@ class _StatisticsPageState extends State<StatisticsPage> {
                       fontSize: 13,
                       fontWeight:
                           isSelected ? FontWeight.w700 : FontWeight.w500,
-                      color: isSelected ? Colors.white : _textSecondary,
+                      color:
+                          isSelected ? Colors.white : context.appTextSecondary,
                     ),
                   ),
                 ),
@@ -268,7 +266,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
           style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w500,
-            color: _textPrimary,
+            color: context.appTextPrimary,
             letterSpacing: -0.3,
           ),
         ),
@@ -288,9 +286,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: context.appCardColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
+        border: Border.all(color: context.appBorderColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -319,18 +317,21 @@ class _StatisticsPageState extends State<StatisticsPage> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: _textSecondary,
+                    color: context.appTextSecondary,
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  NumberFormat('#,###', 'fr_FR').format(amount),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: _textPrimary,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    formatMoney(context, amount, withCurrency: false),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: context.appTextPrimary,
+                    ),
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -351,9 +352,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
       height: 300,
       padding: const EdgeInsets.fromLTRB(12, 20, 20, 12),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: context.appCardColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
+        border: Border.all(color: context.appBorderColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -372,7 +373,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
               tooltipRoundedRadius: 10,
               getTooltipItem: (group, groupIndex, rod, rodIndex) {
                 return BarTooltipItem(
-                  '${NumberFormat('#,###', 'fr_FR').format(rod.toY)} CFA',
+                  formatMoney(context, rod.toY),
                   const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -395,7 +396,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                           ? AppLocalizations.of(context)!.deposit
                           : AppLocalizations.of(context)!.withdrawal,
                       style: TextStyle(
-                        color: _textSecondary,
+                        color: context.appTextSecondary,
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -413,9 +414,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
                   return Padding(
                     padding: const EdgeInsets.only(right: 4),
                     child: Text(
-                      NumberFormat.compact(locale: 'fr_FR').format(value),
+                      formatCompactNumber(context, value),
                       style: TextStyle(
-                        color: _textSecondary,
+                        color: context.appTextSecondary,
                         fontSize: 11,
                       ),
                     ),
@@ -437,7 +438,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                     .clamp(1, double.infinity),
             getDrawingHorizontalLine: (value) {
               return FlLine(
-                color: _border,
+                color: context.appBorderColor,
                 strokeWidth: 1,
                 dashArray: [6, 4],
               );
@@ -512,27 +513,27 @@ class _StatisticsPageState extends State<StatisticsPage> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
         decoration: BoxDecoration(
-          color: _cardColor,
+          color: context.appCardColor,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: _border),
+          border: Border.all(color: context.appBorderColor),
         ),
         child: Column(
           children: [
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _surfaceColor,
+                color: context.appSurfaceColor,
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.pie_chart_outline_rounded,
-                  size: 32, color: _textSecondary),
+                  size: 32, color: context.appTextSecondary),
             ),
             const SizedBox(height: 16),
             Text(
               AppLocalizations.of(context)!.noDataDescription,
               style: TextStyle(
                 fontSize: 14,
-                color: _textSecondary,
+                color: context.appTextSecondary,
                 height: 1.4,
               ),
               textAlign: TextAlign.center,
@@ -548,9 +549,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: context.appCardColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
+        border: Border.all(color: context.appBorderColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
@@ -618,19 +619,22 @@ class _StatisticsPageState extends State<StatisticsPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      NumberFormat('#,###', 'fr_FR')
-                          .format(totalIncome - totalExpenses),
+                      formatMoney(
+                        context,
+                        totalIncome - totalExpenses,
+                        withCurrency: false,
+                      ),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: _textPrimary,
+                        color: context.appTextPrimary,
                       ),
                     ),
                     Text(
-                      'CFA',
+                      appCurrency(context),
                       style: TextStyle(
                         fontSize: 11,
-                        color: _textSecondary,
+                        color: context.appTextSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -652,7 +656,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
               Container(
                 width: 1,
                 height: 30,
-                color: _border,
+                color: context.appBorderColor,
               ),
               _buildLegendItem(
                 AppLocalizations.of(context)!.withdrawal,
@@ -688,22 +692,130 @@ class _StatisticsPageState extends State<StatisticsPage> {
               label,
               style: TextStyle(
                 fontSize: 13,
-                color: _textSecondary,
+                color: context.appTextSecondary,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
         const SizedBox(height: 4),
-        Text(
-          '${NumberFormat('#,###', 'fr_FR').format(amount)} CFA',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: _textPrimary,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            formatMoney(context, amount),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: context.appTextPrimary,
+            ),
           ),
         ),
       ],
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // Category breakdown: top spending categories as horizontal bars
+  // ------------------------------------------------------------------
+  Widget _buildCategoryBreakdown(List<Transaction> transactions) {
+    final Map<String, double> spending = {};
+    for (final tx in transactions.where((t) => !t.isDeposit)) {
+      final cat =
+          tx.categoryName ?? AppLocalizations.of(context)!.otherCategory;
+      spending[cat] = (spending[cat] ?? 0) + tx.amount;
+    }
+    if (spending.isEmpty) return const SizedBox.shrink();
+
+    final sorted = spending.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final maxVal = sorted.first.value;
+
+    final colors = [
+      _redColor,
+      const Color(0xFFFF9800),
+      const Color(0xFF9C27B0),
+      const Color(0xFF2196F3),
+      const Color(0xFF009688),
+      const Color(0xFF607D8B),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: context.appCardColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: context.appBorderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          ...sorted.take(6).toList().asMap().entries.map((entry) {
+            final i = entry.key;
+            final cat = entry.value;
+            final progress = cat.value / maxVal;
+            final color = colors[i % colors.length];
+            return Padding(
+              padding: EdgeInsets.only(
+                  bottom:
+                      i < (sorted.length > 6 ? 6 : sorted.length) - 1 ? 16 : 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        cat.key,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: context.appTextPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        formatMoney(context, cat.value),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: color,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 6,
+                      backgroundColor: color.withOpacity(0.08),
+                      valueColor: AlwaysStoppedAnimation<Color>(color),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+          if (sorted.length > 6)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(
+                '+ ${sorted.length - 6} ${AppLocalizations.of(context)!.andXMoreCategories}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: context.appTextSecondary,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

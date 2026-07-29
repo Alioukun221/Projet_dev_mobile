@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:spendwise/constants/app_colors.dart';
 import 'package:spendwise/l10n/app_localizations.dart';
 import 'package:spendwise/models/pending_transaction.dart';
 import 'package:spendwise/services/notification_transaction_service.dart';
 import 'package:spendwise/theme/app_theme.dart';
+import 'package:spendwise/utils/app_format.dart';
 
 class PendingTransactionsPage extends StatefulWidget {
-  final bool isDarkMode;
-  const PendingTransactionsPage({super.key, required this.isDarkMode});
+  const PendingTransactionsPage({super.key});
 
   @override
   State<PendingTransactionsPage> createState() =>
@@ -17,63 +17,52 @@ class PendingTransactionsPage extends StatefulWidget {
 class _PendingTransactionsPageState extends State<PendingTransactionsPage> {
   final _service = NotificationTransactionService();
 
-  bool get _isDarkMode => widget.isDarkMode;
-  Color get _bgColor =>
-      _isDarkMode ? AppTheme.darkBgColor : const Color(0xFFF7F8FC);
-  Color get _cardColor =>
-      _isDarkMode ? AppTheme.darkCardColor : Colors.white;
-  Color get _textPrimary =>
-      _isDarkMode ? Colors.white : const Color(0xFF1A1D29);
-  Color get _textSecondary =>
-      _isDarkMode ? AppTheme.darkTextSecondaryColor : const Color(0xFF6B7280);
-  Color get _borderColor => _isDarkMode
-      ? AppTheme.darkBorderColor
-      : Colors.black.withOpacity(0.04);
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
     return StreamBuilder<int>(
-      stream: _service.pendingCountStream,
-      initialData: _service.pendingCount,
-      builder: (context, _) => Scaffold(
-      backgroundColor: _bgColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: _textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          l10n.pendingTransactions,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: _textPrimary,
-            letterSpacing: -0.5,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          if (_service.getPendingTransactions().isNotEmpty)
-            TextButton(
-              onPressed: _approveAll,
-              child: Text(
-                l10n.approveAll,
-                style: const TextStyle(
-                  color: AppTheme.primaryColor,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
+        stream: _service.pendingCountStream,
+        initialData: _service.pendingCount,
+        builder: (context, _) => Scaffold(
+              backgroundColor: context.appBgColor,
+              appBar: AppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                scrolledUnderElevation: 0,
+                leading: IconButton(
+                  tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                  icon: Icon(Icons.arrow_back_ios_rounded,
+                      color: context.appTextPrimary),
+                  onPressed: () => Navigator.pop(context),
                 ),
+                title: Text(
+                  l10n.pendingTransactions,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: context.appTextPrimary,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                centerTitle: true,
+                actions: [
+                  if (_service.getPendingTransactions().isNotEmpty)
+                    TextButton(
+                      onPressed: _approveAll,
+                      child: Text(
+                        l10n.approveAll,
+                        style: const TextStyle(
+                          color: AppTheme.primaryColor,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            ),
-        ],
-      ),
-      body: _buildBody(l10n),
-    ));
+              body: _buildBody(l10n),
+            ));
   }
 
   Widget _buildBody(AppLocalizations l10n) {
@@ -87,7 +76,7 @@ class _PendingTransactionsPageState extends State<PendingTransactionsPage> {
             Icon(
               Icons.check_circle_outline_rounded,
               size: 64,
-              color: _textSecondary.withOpacity(0.4),
+              color: context.appTextSecondary.withOpacity(0.4),
             ),
             const SizedBox(height: 16),
             Text(
@@ -95,7 +84,7 @@ class _PendingTransactionsPageState extends State<PendingTransactionsPage> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: _textSecondary,
+                color: context.appTextSecondary,
               ),
             ),
           ],
@@ -117,7 +106,6 @@ class _PendingTransactionsPageState extends State<PendingTransactionsPage> {
     final isDeposit = tx.type == 'deposit';
     final amountColor = isDeposit ? AppTheme.successColor : AppTheme.errorColor;
     final amountPrefix = isDeposit ? '+' : '-';
-    final formatter = NumberFormat('#,###', 'fr_FR');
 
     return Dismissible(
       key: Key(tx.id),
@@ -144,7 +132,19 @@ class _PendingTransactionsPageState extends State<PendingTransactionsPage> {
       confirmDismiss: (direction) async {
         try {
           if (direction == DismissDirection.startToEnd) {
-            await _service.approvePending(tx.id);
+            final approved = await _service.approvePending(tx.id);
+            if (!approved) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(l10n.processingError),
+                    backgroundColor: AppTheme.errorColor,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+              return false;
+            }
           } else {
             _service.rejectPending(tx.id);
           }
@@ -154,7 +154,7 @@ class _PendingTransactionsPageState extends State<PendingTransactionsPage> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Erreur lors du traitement'),
+                content: Text(AppLocalizations.of(context)!.processingError),
                 backgroundColor: AppTheme.errorColor,
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(
@@ -170,9 +170,9 @@ class _PendingTransactionsPageState extends State<PendingTransactionsPage> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: _cardColor,
+          color: context.appCardColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _borderColor),
+          border: Border.all(color: context.appBorderColor),
         ),
         child: Row(
           children: [
@@ -201,17 +201,17 @@ class _PendingTransactionsPageState extends State<PendingTransactionsPage> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: _textPrimary,
+                      color: context.appTextPrimary,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${_sourceLabel(tx.source)} · ${DateFormat('dd/MM HH:mm').format(tx.date)}',
+                    '${_sourceLabel(tx.source)} · ${formatDate(context, 'dd/MM HH:mm', tx.date)}',
                     style: TextStyle(
                       fontSize: 12,
-                      color: _textSecondary,
+                      color: context.appTextSecondary,
                     ),
                   ),
                 ],
@@ -220,7 +220,7 @@ class _PendingTransactionsPageState extends State<PendingTransactionsPage> {
             const SizedBox(width: 12),
             // Amount
             Text(
-              '$amountPrefix${formatter.format(tx.amount.toInt())} F',
+              '$amountPrefix${formatMoney(context, tx.amount, withCurrency: false)} ${appCurrency(context)}',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
@@ -234,19 +234,23 @@ class _PendingTransactionsPageState extends State<PendingTransactionsPage> {
   }
 
   Future<void> _approveAll() async {
-    await _service.approveAll();
+    final failedCount = await _service.approveAll();
+    if (!mounted || failedCount == 0) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.processingError),
+        backgroundColor: AppTheme.errorColor,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   IconData _sourceIcon(String source) {
-    return source == 'wave'
-        ? Icons.waves_rounded
-        : Icons.phone_android_rounded;
+    return source == 'wave' ? Icons.waves_rounded : Icons.phone_android_rounded;
   }
 
   Color _sourceColor(String source) {
-    return source == 'wave'
-        ? const Color(0xFF1DC1EC)
-        : const Color(0xFFFF6600);
+    return source == 'wave' ? const Color(0xFF1DC1EC) : const Color(0xFFFF6600);
   }
 
   String _sourceLabel(String source) {
