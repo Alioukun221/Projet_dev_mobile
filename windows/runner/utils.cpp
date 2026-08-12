@@ -1,3 +1,4 @@
+// Utilitaires Windows : console de debogage et conversion UTF-16 vers UTF-8.
 #include "utils.h"
 
 #include <flutter_windows.h>
