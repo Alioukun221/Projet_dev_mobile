@@ -1,3 +1,4 @@
+# Cible CMake du runner Windows (fenetre Win32 hote de la vue Flutter).
 cmake_minimum_required(VERSION 3.14)
 project(runner LANGUAGES CXX)
 
