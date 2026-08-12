@@ -1,3 +1,4 @@
+// Delegue d'application macOS : ferme l'app quand la derniere fenetre est fermee.
 import Cocoa
 import FlutterMacOS
 
