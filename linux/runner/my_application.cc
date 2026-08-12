@@ -1,3 +1,4 @@
+// Fenetre GTK hote de la vue Flutter sous Linux : titre, taille par defaut, cycle de vie.
 #include "my_application.h"
 
 #include <flutter_linux/flutter_linux.h>
