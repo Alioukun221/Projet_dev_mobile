@@ -94,7 +94,7 @@ Modele coeur transaction financiere. `isDeposit` getter.
 `LocaleProvider extends ChangeNotifier` — gere la `Locale` active, sync avec profil Supabase.
 - `applyFromData(data)` — set locale depuis `preferred_locale` du profil si supportee.
 - `setLocale(Locale)` — update optimiste local (notify immediat) puis persist via `AuthService().updateProfile`, erreurs avalees/loguees.
-- Contient aussi `class L10n` avec membre `supportedLocales` — **doublon de nom** avec `lib/l10n/support_locale.dart` (voir [Points d'attention](#points-dattention)).
+- Contient aussi `class L10n` avec membre `supportedLocales` — **source unique** des locales supportees (fr, en, es), utilisee par `applyFromData` et `setLocale`.
 
 ### `lib/providers/profile_provider.dart`
 `ProfileProvider extends ChangeNotifier` — `Profile` courant.
@@ -330,8 +330,8 @@ Etat vide reutilisable (icone+titre+sous-titre+action optionnelle), utilise par 
 
 ## l10n/
 
-- `lib/l10n/support_locale.dart` — `class L10n { support = [fr, en, es] }`.
 - `lib/l10n/app_localizations*.dart` — genere automatiquement (`flutter gen-l10n` depuis `.arb`), pas ecrit a la main.
+- La liste des locales supportees vit dans `class L10n` de `lib/providers/locale_provider.dart`.
 
 ---
 
@@ -339,7 +339,6 @@ Etat vide reutilisable (icone+titre+sous-titre+action optionnelle), utilise par 
 
 Choses reperees en documentant qui meritent un oeil (pas forcement des bugs, mais a connaitre) :
 
-- **Doublon de nom `L10n`** : `lib/providers/locale_provider.dart` declare `class L10n { supportedLocales }` et `lib/l10n/support_locale.dart` declare aussi `class L10n { support }`. Deux classes distinctes, meme nom, membres differents, fichiers differents — source de confusion a l'import. A renommer un des deux si l'occasion se presente.
 - **`SmsTransactionService.stopListening()`** ne fait que flipper un flag interne : `telephony` n'expose pas de vraie API de desabonnement, le listener natif peut rester actif.
 - **Fuseau horaire code en dur** (`Africa/Dakar`) dans `TodoNotificationService` — rappels a la mauvaise heure locale pour un utilisateur hors ce fuseau.
 - **`completeTodo` recurrence mensuelle** : `+1 mois` via `DateTime(year, month+1, day)` peut deraper sur mois courts (ex. 31 janvier → 3 mars).
