@@ -1,3 +1,4 @@
+// Point d'entree du binaire Windows : cree la fenetre Win32 puis lance la boucle de messages.
 #include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
 #include <windows.h>
