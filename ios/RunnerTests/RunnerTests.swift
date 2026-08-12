@@ -1,3 +1,4 @@
+// Tests natifs iOS du target Runner ; les tests metier de SpendWise vivent en Dart dans test/.
 import Flutter
 import UIKit
 import XCTest
