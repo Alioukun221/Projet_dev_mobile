@@ -1,3 +1,4 @@
+# Configuration CMake racine du build Windows : nom du binaire, options de compilation, regles d'installation.
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
 project(spendwise LANGUAGES CXX)
