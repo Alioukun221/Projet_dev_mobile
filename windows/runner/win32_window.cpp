@@ -1,3 +1,4 @@
+// Enveloppe Win32 bas niveau : creation de la fenetre, mise a l'echelle DPI, cycle de vie.
 #include "win32_window.h"
 
 #include <dwmapi.h>
