@@ -1,3 +1,4 @@
+# Cible CMake du runner Linux (fenetre GTK hote de la vue Flutter).
 cmake_minimum_required(VERSION 3.13)
 project(runner LANGUAGES CXX)
 
