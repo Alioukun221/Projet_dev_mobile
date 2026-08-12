@@ -1,3 +1,4 @@
+// Declaration de l'enveloppe Win32 bas niveau du runner Windows.
 #ifndef RUNNER_WIN32_WINDOW_H_
 #define RUNNER_WIN32_WINDOW_H_
 
