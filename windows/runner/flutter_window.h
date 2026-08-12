@@ -1,3 +1,4 @@
+// Declaration de la fenetre Win32 hebergeant le moteur Flutter.
 #ifndef RUNNER_FLUTTER_WINDOW_H_
 #define RUNNER_FLUTTER_WINDOW_H_
 
