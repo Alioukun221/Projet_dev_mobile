@@ -8,7 +8,18 @@
 # The following line activates a set of recommended lints for Flutter apps,
 # packages, and plugins designed to encourage good coding practices.
 analyzer:
+  # Fichiers generes : ils sont reecrits par les outils (flutter gen-l10n,
+  # flutter pub get) et les corriger a la main n'a aucun effet durable.
+  exclude:
+    - lib/l10n/app_localizations*.dart
+    - "**/generated_plugin_registrant.dart"
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
   errors:
+    # Plusieurs plugins du projet sont anciens et exposent encore des APIs
+    # depreciees (notamment `telephony`, non maintenu). Sans cette ligne,
+    # `flutter analyze` noie les vrais problemes sous ces avertissements.
+    # A retirer le jour ou ces plugins sont remplaces.
     deprecated_member_use: ignore
 include: package:flutter_lints/flutter.yaml
 
