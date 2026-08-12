@@ -1,2 +1,3 @@
+// Reglages Xcode specifiques au build macOS debug.
 #include "../../Flutter/Flutter-Debug.xcconfig"
 #include "Warnings.xcconfig"
