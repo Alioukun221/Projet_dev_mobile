@@ -1,3 +1,4 @@
+# Artefacts iOS ignores (Pods, ephemeral, Generated.xcconfig) : tout est regenere par flutter build.
 **/dgph
 *.mode1v3
 *.mode2v3
