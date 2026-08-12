@@ -1,3 +1,4 @@
+// Fenetre Win32 qui heberge le moteur Flutter et relaie les messages de la fenetre.
 #include "flutter_window.h"
 
 #include <optional>
