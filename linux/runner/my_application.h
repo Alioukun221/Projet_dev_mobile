@@ -1,3 +1,4 @@
+// Declaration de l'application GTK hote de la vue Flutter sous Linux.
 #ifndef FLUTTER_MY_APPLICATION_H_
 #define FLUTTER_MY_APPLICATION_H_
 
