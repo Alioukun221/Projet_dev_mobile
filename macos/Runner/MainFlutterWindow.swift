@@ -1,3 +1,4 @@
+// Fenetre principale macOS : installe le FlutterViewController et enregistre les plugins.
 import Cocoa
 import FlutterMacOS
 
