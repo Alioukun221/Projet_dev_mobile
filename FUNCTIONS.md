@@ -137,11 +137,6 @@ Construit contexte financier local + appelle Groq Responses API (`https://api.gr
 - `_cleanAssistantAnswer` — strip blocs `<think>...</think>` (le "ignore reasoning Groq" du README) + heuristique anti-fuite de preambule de raisonnement (regex sur phrases type "the user"/"we should answer" avant un heading "Resume/Reponse/Analyse").
 - **Caveat** : cle API embarquee cote client (`--dart-define`), extractible de l'APK — README recommande backend/Edge Function pour prod.
 
-### `lib/services/permission_service.dart` — `PermissionService`
-Singleton minimal, wrap `permission_handler` — **stockage uniquement**.
-- `requestStoragePermission`, `checkStoragePermission`.
-- `requestAllPermissions()` — malgre le nom, appelle juste `requestStoragePermission` (notif/SMS/exact-alarm geres ailleurs : `TodoNotificationService`, ecran dedie consentement).
-
 ### `lib/services/todo_notification_service.dart` — `TodoNotificationService`
 Singleton, notifications locales (`flutter_local_notifications`) pour rappels d'echeance todo.
 - `init()` — idempotent, init timezone package, **fuseau force `Africa/Dakar`** (pas celui du device), cree channel Android `todo_reminders`.
@@ -345,7 +340,6 @@ Etat vide reutilisable (icone+titre+sous-titre+action optionnelle), utilise par 
 Choses reperees en documentant qui meritent un oeil (pas forcement des bugs, mais a connaitre) :
 
 - **Doublon de nom `L10n`** : `lib/providers/locale_provider.dart` declare `class L10n { supportedLocales }` et `lib/l10n/support_locale.dart` declare aussi `class L10n { support }`. Deux classes distinctes, meme nom, membres differents, fichiers differents — source de confusion a l'import. A renommer un des deux si l'occasion se presente.
-- **`PermissionService.requestAllPermissions()`** ne demande que le stockage malgre son nom — permissions notif/SMS/exact-alarm sont gerees ailleurs (`TodoNotificationService`, ecran consentement).
 - **`SmsTransactionService.stopListening()`** ne fait que flipper un flag interne : `telephony` n'expose pas de vraie API de desabonnement, le listener natif peut rester actif.
 - **Fuseau horaire code en dur** (`Africa/Dakar`) dans `TodoNotificationService` — rappels a la mauvaise heure locale pour un utilisateur hors ce fuseau.
 - **`completeTodo` recurrence mensuelle** : `+1 mois` via `DateTime(year, month+1, day)` peut deraper sur mois courts (ex. 31 janvier → 3 mars).
