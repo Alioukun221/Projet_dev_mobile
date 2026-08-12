@@ -1,3 +1,4 @@
+// Point d'entree iOS : enregistre les plugins Flutter avant le lancement de l'application.
 import Flutter
 import UIKit
 
