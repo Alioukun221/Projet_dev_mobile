@@ -1,3 +1,4 @@
+// Declaration des utilitaires console et encodage du runner Windows.
 #ifndef RUNNER_UTILS_H_
 #define RUNNER_UTILS_H_
 
