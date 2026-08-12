@@ -1,3 +1,4 @@
+# Artefacts du build macOS ignores (Pods, ephemeral, xcuserdata).
 # Flutter-related
 **/Flutter/ephemeral/
 **/Pods/
