@@ -1,3 +1,4 @@
+# Configuration CMake racine du build Linux : nom du binaire, identifiant applicatif, options de compilation.
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.13)
 project(runner LANGUAGES CXX)
