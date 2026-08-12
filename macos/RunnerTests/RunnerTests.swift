@@ -1,3 +1,4 @@
+// Tests natifs macOS du target Runner ; les tests metier de SpendWise vivent en Dart dans test/.
 import Cocoa
 import FlutterMacOS
 import XCTest
