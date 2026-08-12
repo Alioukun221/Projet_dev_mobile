@@ -1,3 +1,4 @@
+# Artefacts du build Android ignores (gradle, local.properties, keystores) : ne jamais commiter de secret de signature ici.
 gradle-wrapper.jar
 /.gradle
 /captures/
