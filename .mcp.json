@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "dart": {
-      "command": "C:\\Users\\cod\\AppData\\Local\\Pub\\Cache\\bin\\dart_mcp_server.bat",
-      "args": []
-    }
-  }
-}
