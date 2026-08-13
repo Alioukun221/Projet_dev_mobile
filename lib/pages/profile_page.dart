@@ -98,7 +98,8 @@ class _ProfilePageState extends State<ProfilePage> {
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: EdgeInsets.fromLTRB(
+            20, 16, 20, 16 + MediaQuery.of(context).padding.bottom),
         child: Column(
           children: [
             // Avatar display

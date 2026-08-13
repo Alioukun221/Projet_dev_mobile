@@ -450,7 +450,8 @@ class _EditTransactionPageState extends State<EditTransactionPage> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        padding: EdgeInsets.fromLTRB(
+            20, 12, 20, 32 + MediaQuery.of(context).padding.bottom),
         child: Form(
           key: _formKey,
           child: Column(

@@ -130,7 +130,11 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
         centerTitle: true,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        // L'affichage bord a bord d'Android fait passer le contenu sous la barre
+        // systeme : on ajoute sa hauteur en bas pour que le dernier reglage
+        // reste atteignable au defilement.
+        padding: EdgeInsets.fromLTRB(
+            20, 20, 20, 20 + MediaQuery.of(context).padding.bottom),
         children: [
           // Permission status
           _buildSection(

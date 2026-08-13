@@ -412,7 +412,8 @@ class _CategoriesPageState extends State<CategoriesPage> {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                  padding: EdgeInsets.fromLTRB(
+                      20, 8, 20, 20 + MediaQuery.of(context).padding.bottom),
                   itemCount: categories.length,
                   itemBuilder: (context, index) {
                     final category = categories[index];

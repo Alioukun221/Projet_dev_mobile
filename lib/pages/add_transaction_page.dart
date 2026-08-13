@@ -44,7 +44,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       backgroundColor: context.appBgColor,
       appBar: _buildAppBar(context),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: EdgeInsets.fromLTRB(
+            20, 12, 20, 12 + MediaQuery.of(context).padding.bottom),
         child: Form(
           key: _formKey,
           child: Column(
