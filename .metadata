@@ -40,6 +40,11 @@ migration:
   # ignored by the migrate tool.
   #
   # Files that are not part of the templates will be ignored by default.
+  #
+  # Pour SpendWise, ces deux fichiers sont trop specifiques pour etre fusionnes
+  # automatiquement : main.dart porte l'initialisation Supabase, du cache local
+  # et des providers, et le pbxproj iOS porte la configuration des targets.
+  # Les laisser geres par le migrate tool ecraserait ces reglages.
   unmanaged_files:
     - 'lib/main.dart'
     - 'ios/Runner.xcodeproj/project.pbxproj'
