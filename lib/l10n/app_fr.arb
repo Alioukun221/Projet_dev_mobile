@@ -123,7 +123,7 @@
     "authEmailRequired": "Veuillez entrer votre e-mail",
     "authEmailInvalid": "Veuillez entrer un e-mail valide",
     "authPasswordRequired": "Veuillez entrer votre mot de passe",
-    "authPasswordTooShort": "Le mot de passe doit contenir au moins 6 caractères",
+    "authPasswordTooShort": "Le mot de passe doit contenir au moins 8 caractères",
     "authCreateAccount": "Créer un\ncompte",
     "authCreateAccountSubtitle": "Commencez votre parcours vers une gestion intelligente",
     "authFullNameHint": "Nom complet",

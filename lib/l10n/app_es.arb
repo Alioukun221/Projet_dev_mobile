@@ -122,7 +122,7 @@
   "authEmailRequired": "Por favor, ingresa tu correo",
   "authEmailInvalid": "Por favor, ingresa un correo válido",
   "authPasswordRequired": "Por favor, ingresa tu contraseña",
-  "authPasswordTooShort": "La contraseña debe tener al menos 6 caracteres",
+  "authPasswordTooShort": "La contraseña debe tener al menos 8 caracteres",
   "authCreateAccount": "Crear\ncuenta",
   "authCreateAccountSubtitle": "Comienza tu camino hacia un presupuesto inteligente",
   "authFullNameHint": "Nombre completo",
