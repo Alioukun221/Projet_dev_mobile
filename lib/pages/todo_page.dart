@@ -112,7 +112,10 @@ class _TodoPageState extends State<TodoPage> {
         .toList();
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+      // 120 px degagent la barre de navigation flottante ; celle-ci est
+      // maintenant remontee de la hauteur de la barre systeme, qu'on ajoute.
+      padding: EdgeInsets.fromLTRB(
+          16, 8, 16, 120 + MediaQuery.of(context).padding.bottom),
       children: [
         if (overdue.isNotEmpty) ...[
           _buildSectionHeader(l10n.overdueTasks, _red),
@@ -585,6 +588,11 @@ class _TodoPageState extends State<TodoPage> {
     String? titleError;
     String? amountError;
 
+    // Hauteur de la barre systeme, lue ici et surtout pas dans le
+    // StatefulBuilder du sheet : un MediaQuery.of() a l'interieur y enregistre
+    // une dependance qui casse la fermeture (voir commentaire plus bas).
+    final systemBottomInset = MediaQuery.of(context).padding.bottom;
+
     final result = await showModalBottomSheet<TodoTask>(
       context: context,
       isScrollControlled: true,
@@ -604,7 +612,7 @@ class _TodoPageState extends State<TodoPage> {
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+              padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + systemBottomInset),
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

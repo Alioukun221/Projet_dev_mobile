@@ -130,7 +130,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
         return SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+          // 120 px degagent la barre de navigation flottante de l'accueil,
+          // plus la hauteur de la barre systeme Android.
+          padding: EdgeInsets.fromLTRB(
+              20, 8, 20, 120 + MediaQuery.of(context).padding.bottom),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
