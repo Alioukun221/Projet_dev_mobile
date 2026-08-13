@@ -18,7 +18,6 @@ init.md
 .swiftpm/
 migrate_working_dir/
 
-.claude/
 android/.gitignore
 google-client-id/
 
