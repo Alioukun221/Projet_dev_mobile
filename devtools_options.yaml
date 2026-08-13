@@ -1,3 +1,6 @@
 description: This file stores settings for Dart & Flutter DevTools.
 documentation: https://docs.flutter.dev/tools/devtools/extensions#configure-extension-enablement-states
+# La liste `extensions` est renseignee par DevTools lui-meme, quand on active
+# ou desactive une extension fournie par un package. Vide = aucune extension
+# DevTools activee pour SpendWise.
 extensions:
