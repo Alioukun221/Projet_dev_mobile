@@ -1,17 +1,5 @@
 # SpendWise - Plan de Migration vers Supabase
 
-## Contexte Actuel
-
-| Aspect | Actuel | Cible |
-|--------|--------|-------|
-| Base de donnees | Hive (NoSQL local) | Supabase (PostgreSQL cloud) |
-| Authentification | Aucune | Supabase Auth (email/Google) |
-| Sync | Aucune (offline only) | Cloud-first + cache local |
-| Multi-device | Non | Oui |
-| State management | Provider + Hive Listenable | Provider + Supabase Realtime |
-
----
-
 ## Phase 0 : Preparation du projet Supabase
 
 ### 0.1 - Creer le projet Supabase
