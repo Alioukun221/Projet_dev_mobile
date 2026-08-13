@@ -742,8 +742,13 @@ class _HomeScreenState extends State<HomeScreen> {
       navIndex = _selectedIndex + 1;
     }
 
+    // `extendBody: true` fait passer le corps sous la barre : rien ne reserve
+    // donc la hauteur de la barre systeme Android. On l'ajoute a la marge, sinon
+    // la navigation de l'app se superpose aux boutons du telephone.
+    final systemBottomInset = MediaQuery.of(context).padding.bottom;
+
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      margin: EdgeInsets.fromLTRB(16, 0, 16, 16 + systemBottomInset),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(24),
